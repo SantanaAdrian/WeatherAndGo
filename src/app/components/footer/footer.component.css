@@ -1,0 +1,38 @@
+.pie-pagina{
+  padding:20px 0;
+}
+
+.facebook-icono{
+  font-size: 24px;
+  color:cornflowerblue;
+}
+.instagram-icono{
+  font-size: 24px;
+  color:blueviolet;
+}
+
+.twitter-icono{
+  font-size: 24px;
+  color:darkturquoise;
+}
+
+.youtube-icono{
+  font-size: 24px;
+  color:red;
+}
+
+.youtube-icono :hover{
+  opacity: 0.5;
+}
+
+.instagram-icono :hover{
+  opacity: 0.5;
+}
+
+.facebook-icono :hover{
+  opacity: 0.5;
+}
+
+.twitter-icono :hover{
+  opacity: 0.5;
+}

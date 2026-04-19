@@ -1,0 +1,12 @@
+<h3>{{miPokemon.name}}</h3>
+
+<div>
+  <img src="{{miPokemon.sprites.other.dream_world.front_default}}" alt="">
+</div>
+
+<h5>Peso: {{miPokemon.weight/10}} Kg</h5>
+
+<h5>Juegos en los que interviene</h5>
+<ul>
+  <li *ngFor="let juego of miPokemon.game_indices">{{juego.version.name}}</li>
+</ul>

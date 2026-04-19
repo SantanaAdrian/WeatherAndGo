@@ -1,0 +1,13 @@
+<div class="d-flex flex-wrap justify-content-between">
+
+  <div class="card mb-5 puntero-link" style="width: 10rem;" *ngFor="let pokemon of listaPokemons" [routerLink]="['/detail', pokemon.id]">
+    <img src="{{pokemon.urlImagen}}" class="card-img-top" alt="{{pokemon.name}}">
+    <div class="card-body">
+      <div class="d-flex justify-content-around">
+        <h5 class="card-title">{{pokemon.id}}</h5>
+        <h5 class="card-title">{{pokemon.name}}</h5>
+      </div>
+    </div>
+  </div>
+
+</div>
