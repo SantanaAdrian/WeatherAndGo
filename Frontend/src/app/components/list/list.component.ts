@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { GLOBAL } from 'src/app/services/global';
-import { PokemonService } from 'src/app/services/pokemon.service';
+import { PokemonService } from 'src/app/services/weather.service';
 
 @Component({
   selector: 'app-list',

@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PokemonService } from 'src/app/services/pokemon.service';
+import { PokemonService } from 'src/app/services/weather.service';
 
 @Component({
   selector: 'app-detail',
@@ -36,7 +36,7 @@ export class DetailComponent implements OnInit{
         console.log(result);
         this.miPokemon = result;
         //this.miPokemon.species.url ==> evolution chain;
-        
+
            },
       error:(error) => {this._router.navigate(['error'])},
       complete:() => {console.log("El Observer ha recibido los parametros")}
