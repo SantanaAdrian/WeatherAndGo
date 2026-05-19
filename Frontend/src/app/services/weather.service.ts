@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 
 export interface ForecastDay {
   fecha: string;
@@ -136,11 +136,18 @@ export class WeatherService {
   constructor(private http: HttpClient) { }
 
   getWeatherList(): Observable<WeatherData[]> {
-    const requests = this.cityLocations.map(city =>
-      this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad)
-    );
+  const requests = this.cityLocations.map(city =>
+    this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad).pipe(
+      catchError(error => {
+        console.error(`Error cargando datos de ${city.ciudad}`, error);
+        return of(null);
+      })
+    )
+  );
 
-    return forkJoin(requests);
+  return forkJoin(requests).pipe(
+    map(results => results.filter((item): item is WeatherData => item !== null))
+  );
   }
 
   getWeatherById(id: string): Observable<WeatherData | undefined> {
