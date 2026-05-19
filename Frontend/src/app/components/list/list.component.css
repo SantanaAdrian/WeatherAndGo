@@ -1,3 +1,78 @@
-.puntero-link{
-  cursor:pointer;
+.hourly-card,
+.day-card {
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hourly-card:hover,
+.day-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.hour-title {
+  font-weight: 600;
+}
+
+.hour-temperature {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+.hour-status {
+  min-height: 48px;
+  margin-bottom: 8px;
+  color: #6c757d;
+}
+
+.day-card {
+  border: 1px solid #e5e5e5;
+}
+
+.day-header {
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 12px;
+}
+
+.day-header h4 {
+  font-weight: 700;
+}
+
+.day-header small {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.day-weather {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.temperature-range {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.temperature-range div {
+  width: 50%;
+  border: 1px solid #343a40;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.temperature-range span {
+  display: block;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.temperature-range strong {
+  font-size: 1.3rem;
+}
+
+.day-data p {
+  margin-bottom: 6px;
 }

@@ -1,1 +1,127 @@
-<p>home works!</p>
+<div class="container mt-4">
+
+  <div class="row mb-4">
+    <div class="col-12 text-center">
+      <h2>MeteoWeb</h2>
+      <p class="text-muted">
+        Consulta el tiempo de tu ubicación actual y recibe recomendaciones de planes según las condiciones meteorológicas.
+      </p>
+    </div>
+  </div>
+
+  <div class="row mb-4" *ngIf="loading">
+    <div class="col-12">
+      <div class="alert alert-secondary text-center">
+        Obteniendo ubicación del dispositivo...
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4" *ngIf="locationError">
+    <div class="col-12">
+      <div class="alert alert-warning">
+        {{ locationError }}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4" *ngIf="weather">
+
+    <div class="col-lg-5 mb-4">
+      <div class="card h-100 weather-main-card">
+        <div class="card-body">
+
+          <h4 class="card-title mb-1">{{ weather.ciudad }}</h4>
+
+          <p class="text-muted mb-3">
+            Latitud: {{ weather.latitud | number:'1.4-4' }} |
+            Longitud: {{ weather.longitud | number:'1.4-4' }}
+          </p>
+
+          <div class="temperature-block mb-3">
+            {{ weather.temperatura }}°C
+          </div>
+
+          <h5 class="text-muted mb-3">
+            {{ weather.estadoCielo }}
+          </h5>
+
+          <p>
+            {{ weather.descripcion }}
+          </p>
+
+          <button class="btn btn-outline-info mt-2" (click)="getDeviceLocation()">
+            Actualizar ubicación
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+
+          <h4 class="card-title mb-3">Datos meteorológicos</h4>
+
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <div class="weather-data-box">
+                <span>Humedad</span>
+                <strong>{{ weather.humedad }}%</strong>
+              </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <div class="weather-data-box">
+                <span>Viento</span>
+                <strong>{{ weather.viento }} km/h</strong>
+              </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <div class="weather-data-box">
+                <span>Lluvia</span>
+                <strong>{{ weather.probabilidadLluvia }}%</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-info mt-3 mb-0">
+            Estos datos son simulados. Más adelante se obtendrán desde el backend mediante APIs meteorológicas externas.
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row" *ngIf="recommendedPlans.length > 0">
+    <div class="col-12 mb-3">
+      <h3>Planes recomendados</h3>
+      <p class="text-muted">
+        Recomendaciones generadas según la previsión meteorológica.
+      </p>
+    </div>
+
+    <div class="col-md-4 mb-4" *ngFor="let plan of recommendedPlans">
+      <div class="card h-100 plan-card">
+        <div class="card-body">
+          <span class="badge bg-info text-dark mb-3">
+            {{ plan.categoria }}
+          </span>
+
+          <h5 class="card-title">
+            {{ plan.titulo }}
+          </h5>
+
+          <p class="card-text">
+            {{ plan.descripcion }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

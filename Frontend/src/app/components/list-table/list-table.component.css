@@ -1,0 +1,15 @@
+.table-row-link {
+  cursor: pointer;
+}
+
+.table-row-link:hover {
+  background-color: rgba(13, 202, 240, 0.12);
+}
+
+.table-row-link {
+  cursor: pointer;
+}
+
+.table-row-link:hover {
+  background-color: rgba(13, 202, 240, 0.12);
+}

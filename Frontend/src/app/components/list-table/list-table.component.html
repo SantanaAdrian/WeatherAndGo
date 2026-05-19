@@ -1,1 +1,54 @@
-<p>list-table works!</p>
+<div class="container mt-4">
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="text-center">Tabla meteorológica</h2>
+      <p class="text-center text-muted">
+        Resumen comparativo de las ubicaciones disponibles en MeteoWeb.
+      </p>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Ciudad</th>
+          <th>Fecha</th>
+          <th>Temperatura</th>
+          <th>Humedad</th>
+          <th>Viento</th>
+          <th>Lluvia</th>
+          <th>Estado</th>
+          <th>Recomendación</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          *ngFor="let weather of weatherList"
+          [routerLink]="['/list', weather.id]"
+          class="table-row-link">
+
+          <td>
+            <strong>{{ weather.ciudad }}</strong>
+          </td>
+
+          <td>{{ weather.fecha }}</td>
+          <td>{{ weather.temperatura }}°C</td>
+          <td>{{ weather.humedad }}%</td>
+          <td>{{ weather.viento }} km/h</td>
+          <td>{{ weather.probabilidadLluvia }}%</td>
+          <td>{{ weather.estadoCielo }}</td>
+
+          <td>
+            <span class="badge bg-info text-dark">
+              {{ weather.categoriaRecomendada }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

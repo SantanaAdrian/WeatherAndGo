@@ -10,7 +10,8 @@ const routes: Routes = [
 
   {path:"", component:HomeComponent},
   {path:"home", component:HomeComponent},
-  {path:"list", component:ListComponent},
+  { path: 'list', component: ListComponent },
+{ path: 'list/:id', component: ListComponent },
   {path:"detail/:id", component:DetailComponent},
   {path:"list-table", component:ListTableComponent},
   {path:"error", component:ErrorComponent},

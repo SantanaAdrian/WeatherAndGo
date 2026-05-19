@@ -1,11 +1,88 @@
-<div class="d-flex flex-wrap justify-content-between">
+<div class="container mt-4" *ngIf="selectedWeather">
 
-  <div class="card mb-5 puntero-link" style="width: 10rem;" *ngFor="let pokemon of listaPokemons" [routerLink]="['/detail', pokemon.id]">
-    <img src="{{pokemon.urlImagen}}" class="card-img-top" alt="{{pokemon.name}}">
-    <div class="card-body">
-      <div class="d-flex justify-content-around">
-        <h5 class="card-title">{{pokemon.id}}</h5>
-        <h5 class="card-title">{{pokemon.name}}</h5>
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="text-center">Predicción meteorológica</h2>
+      <p class="text-center text-muted">
+        Previsión por horas y por días para {{ selectedWeather.ciudad }}.
+      </p>
+    </div>
+  </div>
+
+  <div class="row mb-5">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Predicción por horas</h3>
+
+      <button class="btn btn-outline-info" routerLink="/list-table">
+        Ver otras ubicaciones
+      </button>
+    </div>
+
+    <div class="col-md-2 col-sm-4 col-6 mb-3" *ngFor="let hour of hourlyForecast">
+      <div class="card hourly-card h-100">
+        <div class="card-body text-center">
+          <h5 class="hour-title">{{ hour.hora }}</h5>
+
+          <div class="hour-temperature">
+            {{ hour.temperatura }}°C
+          </div>
+
+          <p class="hour-status">
+            {{ hour.estadoCielo }}
+          </p>
+
+          <small>Lluvia: {{ hour.probabilidadLluvia }}%</small>
+          <br>
+          <small>Viento: {{ hour.viento }} km/h</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12 mb-3">
+      <h3>Predicción por días</h3>
+      <p class="text-muted mb-0">
+        Evolución prevista para los próximos días.
+      </p>
+    </div>
+
+    <div class="col-md-6 col-lg-4 mb-4" *ngFor="let day of selectedWeather.forecast">
+      <div class="card h-100 day-card">
+        <div class="card-body">
+
+          <div class="day-header">
+            <h4 class="mb-0">{{ getDayName(day.fecha) }}</h4>
+            <small>{{ getShortDate(day.fecha) }}</small>
+          </div>
+
+          <div class="day-weather mt-3">
+            {{ day.estadoCielo }}
+          </div>
+
+          <div class="temperature-range mt-3 mb-3">
+            <div>
+              <span>Máxima</span>
+              <strong>{{ day.temperaturaMaxima }}°C</strong>
+            </div>
+
+            <div>
+              <span>Mínima</span>
+              <strong>{{ day.temperaturaMinima }}°C</strong>
+            </div>
+          </div>
+
+          <div class="day-data">
+            <p><strong>Humedad:</strong> {{ day.humedad }}%</p>
+            <p><strong>Viento:</strong> {{ day.viento }} km/h</p>
+            <p><strong>Lluvia:</strong> {{ day.probabilidadLluvia }}%</p>
+          </div>
+
+          <div class="alert alert-secondary mb-0 mt-3">
+            {{ day.recomendacion }}
+          </div>
+
+        </div>
       </div>
     </div>
   </div>

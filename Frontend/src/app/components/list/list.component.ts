@@ -1,47 +1,119 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { GLOBAL } from 'src/app/services/global';
-import { PokemonService } from 'src/app/services/weather.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { WeatherData, WeatherService } from 'src/app/services/weather.service';
+
+interface HourlyForecast {
+  hora: string;
+  temperatura: number;
+  estadoCielo: string;
+  probabilidadLluvia: number;
+  viento: number;
+}
 
 @Component({
   selector: 'app-list',
   templateUrl: './list.component.html',
   styleUrls: ['./list.component.css']
 })
-export class ListComponent implements OnInit{
+export class ListComponent implements OnInit {
 
-  listaPokemons: Array<any> = [];
+  selectedWeather?: WeatherData;
+  hourlyForecast: HourlyForecast[] = [];
 
-constructor(private _pokemonService:PokemonService, private _router:Router){
-}
+  constructor(
+    private weatherService: WeatherService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    this.getDatos();
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id') || 'bilbao';
+      this.getForecast(id);
+    });
   }
 
-  getDatos():void{
-    this._pokemonService.getPokemons(36).subscribe({
-      next: (result) => {
-        console.log(result.results)
-        this.listaPokemons = result.results;
-        for(let pokemon of this.listaPokemons){
-          pokemon.id = this.extraerIdPokemon(pokemon.url);
-          pokemon.urlImagen = GLOBAL.IMAGEN_URL + pokemon.id + ".png";
+  getForecast(id: string): void {
+    this.weatherService.getForecastById(id).subscribe({
+      next: (result: WeatherData | undefined) => {
+        if (!result) {
+          this.router.navigate(['error']);
+          return;
         }
+
+        this.selectedWeather = result;
+        this.hourlyForecast = this.buildHourlyForecast(result);
       },
-      error: (error) => {
-        this._router.navigate(['error']);
+      error: () => {
+        this.router.navigate(['error']);
       },
       complete: () => {
-        console.log("El Observer ha recibido los datos");
+        console.log('Predicción cargada correctamente');
       }
     });
   }
 
-  extraerIdPokemon(url:string):string{
+  buildHourlyForecast(weather: WeatherData): HourlyForecast[] {
+    return [
+      {
+        hora: '08:00',
+        temperatura: weather.temperatura - 3,
+        estadoCielo: weather.estadoCielo,
+        probabilidadLluvia: weather.probabilidadLluvia,
+        viento: weather.viento
+      },
+      {
+        hora: '11:00',
+        temperatura: weather.temperatura - 1,
+        estadoCielo: weather.estadoCielo,
+        probabilidadLluvia: weather.probabilidadLluvia,
+        viento: weather.viento + 1
+      },
+      {
+        hora: '14:00',
+        temperatura: weather.temperatura + 2,
+        estadoCielo: weather.estadoCielo,
+        probabilidadLluvia: Math.max(weather.probabilidadLluvia - 10, 0),
+        viento: weather.viento + 2
+      },
+      {
+        hora: '17:00',
+        temperatura: weather.temperatura + 1,
+        estadoCielo: weather.estadoCielo,
+        probabilidadLluvia: weather.probabilidadLluvia,
+        viento: weather.viento + 1
+      },
+      {
+        hora: '20:00',
+        temperatura: weather.temperatura - 1,
+        estadoCielo: weather.estadoCielo,
+        probabilidadLluvia: weather.probabilidadLluvia + 5,
+        viento: weather.viento
+      },
+      {
+        hora: '23:00',
+        temperatura: weather.temperatura - 3,
+        estadoCielo: weather.estadoCielo,
+        probabilidadLluvia: weather.probabilidadLluvia + 5,
+        viento: Math.max(weather.viento - 2, 0)
+      }
+    ];
+  }
 
-    let id : string = url.slice(34,-1);
-    return id;
+  getDayName(fecha: string): string {
+    const date = new Date(fecha + 'T00:00:00');
+    const dayName = date.toLocaleDateString('es-ES', { weekday: 'long' });
+
+    return dayName.charAt(0).toUpperCase() + dayName.slice(1);
+  }
+
+  getShortDate(fecha: string): string {
+    const date = new Date(fecha + 'T00:00:00');
+
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long'
+    });
   }
 
 }
