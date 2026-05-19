@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface ForecastDay {
@@ -25,6 +25,8 @@ export interface HourlyForecast {
 export interface WeatherData {
   id: string;
   ciudad: string;
+  latitud: number;
+  longitud: number;
   fecha: string;
   temperatura: number;
   humedad: number;
@@ -149,16 +151,18 @@ export class WeatherService {
     const city = this.cityLocations.find(item => item.id === id);
 
     if (!city) {
-      return new Observable<WeatherData | undefined>(observer => {
-        observer.next(undefined);
-        observer.complete();
-      });
+      return of(undefined);
     }
 
     return this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad);
   }
 
-  getWeatherByCoordinates(lat: number, lon: number, id: string = 'ubicacion-actual', ciudad: string = 'Tu ubicación actual'): Observable<WeatherData> {
+  getWeatherByCoordinates(
+    lat: number,
+    lon: number,
+    id: string = 'ubicacion-actual',
+    ciudad: string = 'Tu ubicación actual'
+  ): Observable<WeatherData> {
     const url = `${this.backendUrl}?lat=${lat}&lon=${lon}`;
 
     return this.http.get<BackendWeatherForecastResponse>(url).pipe(
@@ -166,14 +170,24 @@ export class WeatherService {
     );
   }
 
-  private mapBackendResponseToWeatherData(response: BackendWeatherForecastResponse, id: string, ciudad: string): WeatherData {
+  private mapBackendResponseToWeatherData(
+    response: BackendWeatherForecastResponse,
+    id: string,
+    ciudad: string
+  ): WeatherData {
     const fechaActual = response.dailyForecast && response.dailyForecast.length > 0
       ? response.dailyForecast[0].date
       : new Date().toISOString().split('T')[0];
 
+    const resolvedCity = ciudad === 'Tu ubicación actual' && response.locationName
+      ? response.locationName
+      : ciudad;
+
     return {
       id: id,
-      ciudad: ciudad,
+      ciudad: resolvedCity,
+      latitud: response.latitude,
+      longitud: response.longitude,
       fecha: fechaActual,
       temperatura: Math.round(response.currentTemperature),
       humedad: response.currentHumidity,

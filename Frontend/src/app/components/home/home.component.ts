@@ -1,16 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-
-interface HomeWeather {
-  ciudad: string;
-  latitud: number;
-  longitud: number;
-  temperatura: number;
-  humedad: number;
-  viento: number;
-  probabilidadLluvia: number;
-  estadoCielo: string;
-  descripcion: string;
-}
+import { WeatherData, WeatherService } from 'src/app/services/weather.service';
 
 interface RecommendedPlan {
   titulo: string;
@@ -25,11 +14,13 @@ interface RecommendedPlan {
 })
 export class HomeComponent implements OnInit {
 
-  weather?: HomeWeather;
+  weather?: WeatherData;
   recommendedPlans: RecommendedPlan[] = [];
 
   loading: boolean = false;
   locationError: string = '';
+
+  constructor(private weatherService: WeatherService) { }
 
   ngOnInit(): void {
     this.getDeviceLocation();
@@ -40,8 +31,7 @@ export class HomeComponent implements OnInit {
     this.locationError = '';
 
     if (!navigator.geolocation) {
-      this.loading = false;
-      this.locationError = 'El navegador no permite obtener la ubicación.';
+      this.locationError = 'El navegador no permite obtener la ubicación. Se muestran datos de Bilbao.';
       this.loadDefaultWeather();
       return;
     }
@@ -51,47 +41,47 @@ export class HomeComponent implements OnInit {
         const latitud = position.coords.latitude;
         const longitud = position.coords.longitude;
 
-        this.loadMockWeatherByLocation(latitud, longitud);
-        this.loading = false;
+        this.weatherService.getWeatherByCoordinates(
+          latitud,
+          longitud,
+          'ubicacion-actual',
+          'Tu ubicación actual'
+        ).subscribe({
+          next: (result: WeatherData) => {
+            this.weather = result;
+            this.generatePlans();
+            this.loading = false;
+          },
+          error: () => {
+            this.locationError = 'No se ha podido obtener la predicción de tu ubicación. Se muestran datos de Bilbao.';
+            this.loadDefaultWeather();
+          }
+        });
       },
-      (error: GeolocationPositionError) => {
-        this.loading = false;
-        this.locationError = 'No se ha podido obtener la ubicación. Se muestran datos de ejemplo.';
+      () => {
+        this.locationError = 'No se ha podido obtener la ubicación. Se muestran datos de Bilbao.';
         this.loadDefaultWeather();
       }
     );
   }
 
-  loadMockWeatherByLocation(latitud: number, longitud: number): void {
-    this.weather = {
-      ciudad: 'Tu ubicación actual',
-      latitud: latitud,
-      longitud: longitud,
-      temperatura: 18,
-      humedad: 72,
-      viento: 14,
-      probabilidadLluvia: 65,
-      estadoCielo: 'Lluvia débil',
-      descripcion: 'Predicción simulada generada a partir de la ubicación del dispositivo.'
-    };
-
-    this.generatePlans();
-  }
-
   loadDefaultWeather(): void {
-    this.weather = {
-      ciudad: 'Bilbao',
-      latitud: 43.263,
-      longitud: -2.935,
-      temperatura: 18,
-      humedad: 72,
-      viento: 14,
-      probabilidadLluvia: 65,
-      estadoCielo: 'Lluvia débil',
-      descripcion: 'Datos de ejemplo utilizados cuando no se dispone de ubicación.'
-    };
-
-    this.generatePlans();
+    this.weatherService.getWeatherByCoordinates(
+      43.263,
+      -2.935,
+      'bilbao',
+      'Bilbao'
+    ).subscribe({
+      next: (result: WeatherData) => {
+        this.weather = result;
+        this.generatePlans();
+        this.loading = false;
+      },
+      error: () => {
+        this.locationError = 'No se han podido cargar los datos meteorológicos.';
+        this.loading = false;
+      }
+    });
   }
 
   generatePlans(): void {
@@ -99,7 +89,7 @@ export class HomeComponent implements OnInit {
       return;
     }
 
-    if (this.weather.probabilidadLluvia >= 60) {
+    if (this.weather.probabilidadLluvia >= 60 || this.weather.estadoCielo.toLowerCase().includes('lluvia')) {
       this.recommendedPlans = [
         {
           titulo: 'Visitar un museo o exposición',
@@ -121,7 +111,29 @@ export class HomeComponent implements OnInit {
       return;
     }
 
-    if (this.weather.temperatura >= 28) {
+    if (this.weather.estadoCielo.toLowerCase().includes('tormenta')) {
+      this.recommendedPlans = [
+        {
+          titulo: 'Plan de interior',
+          categoria: 'Interior',
+          descripcion: 'Recomendado por posible tormenta o condiciones inestables.'
+        },
+        {
+          titulo: 'Actividad cultural cubierta',
+          categoria: 'Cultura',
+          descripcion: 'Opción segura para evitar exposición al mal tiempo.'
+        },
+        {
+          titulo: 'Ocio en espacio cerrado',
+          categoria: 'Ocio',
+          descripcion: 'Alternativa adecuada si la previsión empeora durante el día.'
+        }
+      ];
+
+      return;
+    }
+
+    if (this.weather.temperatura >= 30) {
       this.recommendedPlans = [
         {
           titulo: 'Paseo en zona sombreada',
