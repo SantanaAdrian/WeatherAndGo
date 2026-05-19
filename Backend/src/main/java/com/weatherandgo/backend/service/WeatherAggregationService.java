@@ -21,13 +21,16 @@ public class WeatherAggregationService {
 
     private final List<WeatherProviderClient> weatherProviderClients;
     private final WeatherRecommendationService weatherRecommendationService;
+    private final LocationService locationService;
 
     public WeatherAggregationService(
             List<WeatherProviderClient> weatherProviderClients,
-            WeatherRecommendationService weatherRecommendationService
+            WeatherRecommendationService weatherRecommendationService,
+            LocationService locationService
     ) {
         this.weatherProviderClients = weatherProviderClients;
         this.weatherRecommendationService = weatherRecommendationService;
+        this.locationService = locationService;
     }
 
     public WeatherForecastResponse getForecast(Double latitude, Double longitude) {
@@ -81,7 +84,7 @@ public class WeatherAggregationService {
     private WeatherForecastResponse mapToResponse(NormalizedWeatherData data) {
         WeatherForecastResponse response = new WeatherForecastResponse();
 
-        response.setLocationName("Ubicación seleccionada");
+        response.setLocationName(locationService.resolveLocationName(data.getLatitude(), data.getLongitude()));
         response.setLatitude(data.getLatitude());
         response.setLongitude(data.getLongitude());
         response.setTimezone(data.getTimezone());
