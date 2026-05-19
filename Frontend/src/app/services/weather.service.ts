@@ -1,5 +1,7 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export interface ForecastDay {
   fecha: string;
@@ -10,6 +12,14 @@ export interface ForecastDay {
   probabilidadLluvia: number;
   estadoCielo: string;
   recomendacion: string;
+}
+
+export interface HourlyForecast {
+  hora: string;
+  temperatura: number;
+  estadoCielo: string;
+  probabilidadLluvia: number;
+  viento: number;
 }
 
 export interface WeatherData {
@@ -25,6 +35,54 @@ export interface WeatherData {
   recomendacion: string;
   categoriaRecomendada: string;
   forecast: ForecastDay[];
+  hourlyForecast: HourlyForecast[];
+}
+
+interface BackendHourlyForecast {
+  time: string;
+  temperature: number;
+  precipitationProbability: number;
+  windSpeed: number;
+  weatherStatus: string;
+}
+
+interface BackendDailyForecast {
+  date: string;
+  dayName: string;
+  maxTemperature: number;
+  minTemperature: number;
+  precipitationProbability: number;
+  windSpeed: number;
+  weatherStatus: string;
+  recommendation: string;
+}
+
+interface BackendWeatherSource {
+  provider: string;
+  status: string;
+}
+
+interface BackendWeatherForecastResponse {
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  currentTemperature: number;
+  currentHumidity: number;
+  currentWindSpeed: number;
+  currentPrecipitationProbability: number;
+  currentWeatherStatus: string;
+  currentRecommendation: string;
+  hourlyForecast: BackendHourlyForecast[];
+  dailyForecast: BackendDailyForecast[];
+  sources: BackendWeatherSource[];
+}
+
+interface CityLocation {
+  id: string;
+  ciudad: string;
+  lat: number;
+  lon: number;
 }
 
 @Injectable({
@@ -32,277 +90,164 @@ export interface WeatherData {
 })
 export class WeatherService {
 
-  private weatherMock: WeatherData[] = [
+  private readonly backendUrl = 'http://localhost:8080/api/weather/forecast';
+
+  private readonly cityLocations: CityLocation[] = [
     {
       id: 'bilbao',
       ciudad: 'Bilbao',
-      fecha: '2026-05-18',
-      temperatura: 18,
-      humedad: 72,
-      viento: 14,
-      probabilidadLluvia: 65,
-      estadoCielo: 'Lluvia débil',
-      descripcion: 'Día fresco con posibilidad de lluvia intermitente.',
-      recomendacion: 'Se recomienda realizar actividades bajo techo, como visitar un museo, ir al cine o entrenar en un gimnasio.',
-      categoriaRecomendada: 'Interior',
-      forecast: [
-      {
-        fecha: '2026-05-18',
-        temperaturaMaxima: 18,
-        temperaturaMinima: 12,
-        humedad: 72,
-        viento: 14,
-        probabilidadLluvia: 65,
-        estadoCielo: 'Lluvia débil',
-        recomendacion: 'Mejor optar por planes de interior.'
-      },
-      {
-        fecha: '2026-05-19',
-        temperaturaMaxima: 19,
-        temperaturaMinima: 13,
-        humedad: 68,
-        viento: 12,
-        probabilidadLluvia: 45,
-        estadoCielo: 'Nuboso',
-        recomendacion: 'Plan mixto: paseo corto y alternativa cubierta.'
-      },
-      {
-        fecha: '2026-05-20',
-        temperaturaMaxima: 21,
-        temperaturaMinima: 14,
-        humedad: 60,
-        viento: 10,
-        probabilidadLluvia: 20,
-        estadoCielo: 'Parcialmente nuboso',
-        recomendacion: 'Buen día para actividades al aire libre.'
-      },
-      {
-        fecha: '2026-05-21',
-        temperaturaMaxima: 20,
-        temperaturaMinima: 13,
-        humedad: 66,
-        viento: 16,
-        probabilidadLluvia: 35,
-        estadoCielo: 'Intervalos nubosos',
-        recomendacion: 'Recomendable llevar plan alternativo bajo techo.'
-      },
-      {
-        fecha: '2026-05-22',
-        temperaturaMaxima: 17,
-        temperaturaMinima: 11,
-        humedad: 78,
-        viento: 20,
-        probabilidadLluvia: 70,
-        estadoCielo: 'Lluvia',
-        recomendacion: 'Priorizar actividades interiores.'
-      },
-      {
-        fecha: '2026-05-23',
-        temperaturaMaxima: 19,
-        temperaturaMinima: 12,
-        humedad: 70,
-        viento: 13,
-        probabilidadLluvia: 40,
-        estadoCielo: 'Nuboso',
-        recomendacion: 'Buen día para planes tranquilos, con opción de interior por si empeora el tiempo.'
-      },
-      {
-        fecha: '2026-05-24',
-        temperaturaMaxima: 21,
-        temperaturaMinima: 13,
-        humedad: 62,
-        viento: 11,
-        probabilidadLluvia: 20,
-        estadoCielo: 'Parcialmente nuboso',
-        recomendacion: 'Condiciones adecuadas para pasear o realizar actividades al aire libre.'
-      }
-    ]
+      lat: 43.263,
+      lon: -2.935
     },
     {
       id: 'madrid',
       ciudad: 'Madrid',
-      fecha: '2026-05-18',
-      temperatura: 26,
-      humedad: 38,
-      viento: 10,
-      probabilidadLluvia: 5,
-      estadoCielo: 'Soleado',
-      descripcion: 'Día cálido y seco, con cielo despejado durante la mayor parte de la jornada.',
-      recomendacion: 'Condiciones adecuadas para pasear, hacer deporte moderado o realizar actividades al aire libre.',
-      categoriaRecomendada: 'Exterior',
-      forecast: [
-        {
-          fecha: '2026-05-18',
-          temperaturaMaxima: 26,
-          temperaturaMinima: 16,
-          humedad: 38,
-          viento: 10,
-          probabilidadLluvia: 5,
-          estadoCielo: 'Soleado',
-          recomendacion: 'Buen día para planes al aire libre.'
-        },
-        {
-          fecha: '2026-05-19',
-          temperaturaMaxima: 28,
-          temperaturaMinima: 17,
-          humedad: 35,
-          viento: 9,
-          probabilidadLluvia: 0,
-          estadoCielo: 'Despejado',
-          recomendacion: 'Evitar las horas centrales si hace calor.'
-        },
-        {
-          fecha: '2026-05-20',
-          temperaturaMaxima: 30,
-          temperaturaMinima: 18,
-          humedad: 32,
-          viento: 11,
-          probabilidadLluvia: 0,
-          estadoCielo: 'Muy soleado',
-          recomendacion: 'Mejor planes en sombra o interiores climatizados.'
-        },
-        {
-          fecha: '2026-05-21',
-          temperaturaMaxima: 27,
-          temperaturaMinima: 17,
-          humedad: 40,
-          viento: 13,
-          probabilidadLluvia: 10,
-          estadoCielo: 'Soleado',
-          recomendacion: 'Buen día para rutas urbanas.'
-        },
-        {
-          fecha: '2026-05-22',
-          temperaturaMaxima: 25,
-          temperaturaMinima: 15,
-          humedad: 42,
-          viento: 12,
-          probabilidadLluvia: 15,
-          estadoCielo: 'Parcialmente nuboso',
-          recomendacion: 'Condiciones adecuadas para deporte suave.'
-        },
-        {
-          fecha: '2026-05-23',
-          temperaturaMaxima: 27,
-          temperaturaMinima: 16,
-          humedad: 39,
-          viento: 10,
-          probabilidadLluvia: 5,
-          estadoCielo: 'Soleado',
-          recomendacion: 'Buen día para actividades exteriores, evitando las horas de más calor.'
-        },
-        {
-          fecha: '2026-05-24',
-          temperaturaMaxima: 29,
-          temperaturaMinima: 18,
-          humedad: 34,
-          viento: 9,
-          probabilidadLluvia: 0,
-          estadoCielo: 'Despejado',
-          recomendacion: 'Recomendable hacer planes al aire libre por la mañana o al final de la tarde.'
-        }
-      ]
+      lat: 40.4168,
+      lon: -3.7038
     },
     {
       id: 'barcelona',
       ciudad: 'Barcelona',
-      fecha: '2026-05-18',
-      temperatura: 23,
-      humedad: 61,
-      viento: 18,
-      probabilidadLluvia: 20,
-      estadoCielo: 'Parcialmente nuboso',
-      descripcion: 'Temperatura agradable con intervalos nubosos y viento moderado.',
-      recomendacion: 'Buen momento para planes urbanos, paseos cortos o actividades culturales al aire libre.',
-      categoriaRecomendada: 'Mixta',
-      forecast: [
-        {
-          fecha: '2026-05-18',
-          temperaturaMaxima: 23,
-          temperaturaMinima: 17,
-          humedad: 61,
-          viento: 18,
-          probabilidadLluvia: 20,
-          estadoCielo: 'Parcialmente nuboso',
-          recomendacion: 'Buen día para planes urbanos.'
-        },
-        {
-          fecha: '2026-05-19',
-          temperaturaMaxima: 24,
-          temperaturaMinima: 18,
-          humedad: 58,
-          viento: 15,
-          probabilidadLluvia: 15,
-          estadoCielo: 'Soleado',
-          recomendacion: 'Adecuado para actividades al aire libre.'
-        },
-        {
-          fecha: '2026-05-20',
-          temperaturaMaxima: 22,
-          temperaturaMinima: 17,
-          humedad: 65,
-          viento: 20,
-          probabilidadLluvia: 35,
-          estadoCielo: 'Nuboso',
-          recomendacion: 'Plan mixto con alternativa cubierta.'
-        },
-        {
-          fecha: '2026-05-21',
-          temperaturaMaxima: 21,
-          temperaturaMinima: 16,
-          humedad: 70,
-          viento: 22,
-          probabilidadLluvia: 50,
-          estadoCielo: 'Lluvia débil',
-          recomendacion: 'Mejor planes de interior.'
-        },
-        {
-          fecha: '2026-05-22',
-          temperaturaMaxima: 24,
-          temperaturaMinima: 18,
-          humedad: 59,
-          viento: 14,
-          probabilidadLluvia: 10,
-          estadoCielo: 'Despejado',
-          recomendacion: 'Buen día para pasear.'
-        },
-        {
-          fecha: '2026-05-23',
-          temperaturaMaxima: 25,
-          temperaturaMinima: 18,
-          humedad: 57,
-          viento: 12,
-          probabilidadLluvia: 10,
-          estadoCielo: 'Soleado',
-          recomendacion: 'Buen día para paseos, rutas urbanas o actividades junto al mar.'
-        },
-        {
-          fecha: '2026-05-24',
-          temperaturaMaxima: 24,
-          temperaturaMinima: 17,
-          humedad: 63,
-          viento: 16,
-          probabilidadLluvia: 25,
-          estadoCielo: 'Parcialmente nuboso',
-          recomendacion: 'Plan exterior viable, aunque conviene revisar la previsión antes de salir.'
-        }
-      ]
+      lat: 41.3874,
+      lon: 2.1686
+    },
+    {
+      id: 'valencia',
+      ciudad: 'Valencia',
+      lat: 39.4699,
+      lon: -0.3763
+    },
+    {
+      id: 'sevilla',
+      ciudad: 'Sevilla',
+      lat: 37.3891,
+      lon: -5.9845
+    },
+    {
+      id: 'santander',
+      ciudad: 'Santander',
+      lat: 43.4623,
+      lon: -3.8099
     }
   ];
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
   getWeatherList(): Observable<WeatherData[]> {
-    return of(this.weatherMock);
+    const requests = this.cityLocations.map(city =>
+      this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad)
+    );
+
+    return forkJoin(requests);
   }
 
   getWeatherById(id: string): Observable<WeatherData | undefined> {
-    const weatherData = this.weatherMock.find(item => item.id === id);
-    return of(weatherData);
+    return this.getForecastById(id);
   }
 
   getForecastById(id: string): Observable<WeatherData | undefined> {
-    const weatherData = this.weatherMock.find(item => item.id === id);
-    return of(weatherData);
+    const city = this.cityLocations.find(item => item.id === id);
+
+    if (!city) {
+      return new Observable<WeatherData | undefined>(observer => {
+        observer.next(undefined);
+        observer.complete();
+      });
+    }
+
+    return this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad);
+  }
+
+  getWeatherByCoordinates(lat: number, lon: number, id: string = 'ubicacion-actual', ciudad: string = 'Tu ubicación actual'): Observable<WeatherData> {
+    const url = `${this.backendUrl}?lat=${lat}&lon=${lon}`;
+
+    return this.http.get<BackendWeatherForecastResponse>(url).pipe(
+      map(response => this.mapBackendResponseToWeatherData(response, id, ciudad))
+    );
+  }
+
+  private mapBackendResponseToWeatherData(response: BackendWeatherForecastResponse, id: string, ciudad: string): WeatherData {
+    const fechaActual = response.dailyForecast && response.dailyForecast.length > 0
+      ? response.dailyForecast[0].date
+      : new Date().toISOString().split('T')[0];
+
+    return {
+      id: id,
+      ciudad: ciudad,
+      fecha: fechaActual,
+      temperatura: Math.round(response.currentTemperature),
+      humedad: response.currentHumidity,
+      viento: Math.round(response.currentWindSpeed),
+      probabilidadLluvia: response.currentPrecipitationProbability,
+      estadoCielo: response.currentWeatherStatus,
+      descripcion: this.buildDescription(response),
+      recomendacion: response.currentRecommendation,
+      categoriaRecomendada: this.getRecommendationCategory(response),
+      forecast: this.mapDailyForecast(response),
+      hourlyForecast: this.mapHourlyForecast(response)
+    };
+  }
+
+  private mapDailyForecast(response: BackendWeatherForecastResponse): ForecastDay[] {
+    if (!response.dailyForecast) {
+      return [];
+    }
+
+    return response.dailyForecast.map(day => ({
+      fecha: day.date,
+      temperaturaMaxima: Math.round(day.maxTemperature),
+      temperaturaMinima: Math.round(day.minTemperature),
+      humedad: response.currentHumidity,
+      viento: Math.round(day.windSpeed),
+      probabilidadLluvia: day.precipitationProbability,
+      estadoCielo: day.weatherStatus,
+      recomendacion: day.recommendation
+    }));
+  }
+
+  private mapHourlyForecast(response: BackendWeatherForecastResponse): HourlyForecast[] {
+    if (!response.hourlyForecast) {
+      return [];
+    }
+
+    return response.hourlyForecast.map(hour => ({
+      hora: this.formatHour(hour.time),
+      temperatura: Math.round(hour.temperature),
+      estadoCielo: hour.weatherStatus,
+      probabilidadLluvia: hour.precipitationProbability,
+      viento: Math.round(hour.windSpeed)
+    }));
+  }
+
+  private buildDescription(response: BackendWeatherForecastResponse): string {
+    return `Temperatura actual de ${Math.round(response.currentTemperature)}°C, humedad del ${response.currentHumidity}% y viento de ${Math.round(response.currentWindSpeed)} km/h.`;
+  }
+
+  private getRecommendationCategory(response: BackendWeatherForecastResponse): string {
+    const lluvia = response.currentPrecipitationProbability;
+    const temperatura = response.currentTemperature;
+    const estado = response.currentWeatherStatus?.toLowerCase() || '';
+
+    if (lluvia >= 60 || estado.includes('lluvia') || estado.includes('tormenta')) {
+      return 'Interior';
+    }
+
+    if (temperatura >= 30) {
+      return 'Interior';
+    }
+
+    if (lluvia >= 30 || estado.includes('nuboso')) {
+      return 'Mixta';
+    }
+
+    return 'Exterior';
+  }
+
+  private formatHour(time: string): string {
+    if (!time || !time.includes('T')) {
+      return time;
+    }
+
+    return time.split('T')[1];
   }
 }
