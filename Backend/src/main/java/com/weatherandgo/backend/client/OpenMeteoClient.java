@@ -71,7 +71,9 @@ public class OpenMeteoClient implements WeatherProviderClient {
             normalizedWeatherData.setCurrentTemperature(getDouble(current, "temperature_2m"));
             normalizedWeatherData.setCurrentHumidity(getInteger(current, "relative_humidity_2m"));
             normalizedWeatherData.setCurrentWindSpeed(getDouble(current, "wind_speed_10m"));
-            normalizedWeatherData.setCurrentPrecipitationProbability(0);
+            normalizedWeatherData.setCurrentPrecipitationProbability(
+                resolveCurrentPrecipitationProbability(response, getString(current, "time"))
+            );
             normalizedWeatherData.setCurrentWeatherStatus(mapWeatherCodeToStatus(getInteger(current, "weather_code")));
         }
 
@@ -148,6 +150,40 @@ public class OpenMeteoClient implements WeatherProviderClient {
         }
 
         return dailyForecast;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Integer resolveCurrentPrecipitationProbability(Map<String, Object> response, String currentTime) {
+        Map<String, Object> hourly = (Map<String, Object>) response.get("hourly");
+
+        if (hourly == null) {
+            return 0;
+        }
+
+        List<String> times = (List<String>) hourly.get("time");
+        List<Number> precipitationProbabilities = (List<Number>) hourly.get("precipitation_probability");
+
+        if (times == null || precipitationProbabilities == null || times.isEmpty() || precipitationProbabilities.isEmpty()) {
+            return 0;
+        }
+
+        int maxItems = Math.min(times.size(), precipitationProbabilities.size());
+
+        if (currentTime != null && !currentTime.isBlank()) {
+            for (int i = 0; i < maxItems; i++) {
+                if (currentTime.equals(times.get(i))) {
+                    return toInteger(precipitationProbabilities.get(i));
+                }
+            }
+
+            for (int i = 0; i < maxItems; i++) {
+                if (times.get(i).compareTo(currentTime) >= 0) {
+                    return toInteger(precipitationProbabilities.get(i));
+                }
+            }
+        }
+
+        return toInteger(precipitationProbabilities.get(0));
     }
 
     private String mapWeatherCodeToStatus(Integer code) {

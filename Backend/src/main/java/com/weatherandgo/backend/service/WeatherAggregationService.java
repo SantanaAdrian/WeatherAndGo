@@ -22,15 +22,18 @@ public class WeatherAggregationService {
     private final List<WeatherProviderClient> weatherProviderClients;
     private final WeatherRecommendationService weatherRecommendationService;
     private final LocationService locationService;
+    private final WeatherQueryLogService weatherQueryLogService;
 
     public WeatherAggregationService(
-            List<WeatherProviderClient> weatherProviderClients,
-            WeatherRecommendationService weatherRecommendationService,
-            LocationService locationService
+        List<WeatherProviderClient> weatherProviderClients,
+        WeatherRecommendationService weatherRecommendationService,
+        LocationService locationService,
+        WeatherQueryLogService weatherQueryLogService
     ) {
         this.weatherProviderClients = weatherProviderClients;
         this.weatherRecommendationService = weatherRecommendationService;
         this.locationService = locationService;
+        this.weatherQueryLogService = weatherQueryLogService;
     }
 
     public WeatherForecastResponse getForecast(Double latitude, Double longitude) {
@@ -55,6 +58,8 @@ public class WeatherAggregationService {
 
         WeatherForecastResponse response = mapToResponse(aggregatedData);
         response.setSources(sources);
+
+        weatherQueryLogService.saveQuery(response);
 
         return response;
     }
