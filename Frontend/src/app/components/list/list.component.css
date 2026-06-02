@@ -109,59 +109,8 @@
   margin: 0;
 }
 
-.provider-section,
-.hourly-section,
-.daily-section {
-  margin-bottom: 2.8rem;
-}
-
-.provider-grid-wrapper {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.2rem;
-}
-
-.provider-card {
-  border: 1px solid #323838;
-  border-radius: 1rem;
-  padding: 1.4rem;
-  background-color: #181c1c;
-}
-
-.provider-card h4 {
-  font-size: 1.3rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.provider-card p {
-  color: #b8aa9a;
-  font-weight: 600;
-  margin: 1rem 0 0 0;
-}
-
-.provider-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.8rem;
-}
-
-.provider-grid div {
-  border: 1px solid #323838;
-  border-radius: 0.8rem;
-  padding: 0.9rem;
-  text-align: center;
-  background-color: #1d2222;
-}
-
-.provider-grid span {
-  display: block;
-  color: #b8aa9a;
-  margin-bottom: 0.3rem;
-}
-
-.provider-grid strong {
-  font-size: 1.1rem;
+.hourly-section {
+  margin-bottom: 2.5rem;
 }
 
 .hourly-grid {
@@ -200,6 +149,11 @@
   display: block;
   color: #d6cec3;
   margin-top: 0.2rem;
+}
+
+.daily-section {
+  margin-top: 1rem;
+  margin-bottom: 2.8rem;
 }
 
 .daily-grid {
@@ -282,7 +236,6 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .provider-grid-wrapper,
   .daily-grid {
     grid-template-columns: 1fr;
   }
@@ -294,8 +247,7 @@
   }
 
   .current-details,
-  .hourly-grid,
-  .provider-grid {
+  .hourly-grid {
     grid-template-columns: 1fr;
   }
 

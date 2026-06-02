@@ -1,5 +1,20 @@
 import { Component, OnInit } from '@angular/core';
-import { WeatherData, WeatherService } from 'src/app/services/weather.service';
+import { WeatherData, WeatherProviderData, WeatherService } from 'src/app/services/weather.service';
+
+interface CityOption {
+  id: string;
+  name: string;
+}
+
+interface ProviderComparisonRow {
+  provider: string;
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  precipitationProbability: number;
+  weatherStatus: string;
+  isAggregated: boolean;
+}
 
 @Component({
   selector: 'app-list-table',
@@ -8,26 +23,98 @@ import { WeatherData, WeatherService } from 'src/app/services/weather.service';
 })
 export class ListTableComponent implements OnInit {
 
-  weatherList: WeatherData[] = [];
+  selectedCityId: string = 'bilbao';
+  selectedWeather?: WeatherData;
+  comparisonRows: ProviderComparisonRow[] = [];
+  loading: boolean = false;
+  errorMessage: string = '';
+
+  cityOptions: CityOption[] = [
+    {
+      id: 'bilbao',
+      name: 'Bilbao'
+    },
+    {
+      id: 'madrid',
+      name: 'Madrid'
+    },
+    {
+      id: 'barcelona',
+      name: 'Barcelona'
+    },
+    {
+      id: 'valencia',
+      name: 'Valencia'
+    },
+    {
+      id: 'sevilla',
+      name: 'Sevilla'
+    },
+    {
+      id: 'santander',
+      name: 'Santander'
+    }
+  ];
 
   constructor(private weatherService: WeatherService) { }
 
   ngOnInit(): void {
-    this.getWeatherData();
+    this.loadComparison(this.selectedCityId);
   }
 
-  getWeatherData(): void {
-    this.weatherService.getWeatherList().subscribe({
-      next: (result: WeatherData[]) => {
-        this.weatherList = result;
+  loadComparison(cityId: string): void {
+    this.selectedCityId = cityId;
+    this.loading = true;
+    this.errorMessage = '';
+
+    this.weatherService.getForecastById(cityId).subscribe({
+      next: (result: WeatherData | undefined) => {
+        if (!result) {
+          this.errorMessage = 'No se han podido cargar los datos meteorológicos.';
+          this.selectedWeather = undefined;
+          this.comparisonRows = [];
+          this.loading = false;
+          return;
+        }
+
+        this.selectedWeather = result;
+        this.comparisonRows = this.buildComparisonRows(result);
+        this.loading = false;
       },
       error: () => {
-        console.error('Error al cargar la tabla meteorológica');
-      },
-      complete: () => {
-        console.log('Tabla meteorológica cargada correctamente');
+        this.errorMessage = 'Error al obtener la comparativa de proveedores.';
+        this.selectedWeather = undefined;
+        this.comparisonRows = [];
+        this.loading = false;
       }
     });
   }
 
+  private buildComparisonRows(weather: WeatherData): ProviderComparisonRow[] {
+    const rows: ProviderComparisonRow[] = [];
+
+    rows.push({
+      provider: 'WEATHER&GO',
+      temperature: weather.temperatura,
+      humidity: weather.humedad,
+      windSpeed: weather.viento,
+      precipitationProbability: weather.probabilidadLluvia,
+      weatherStatus: weather.estadoCielo,
+      isAggregated: true
+    });
+
+    weather.providerData.forEach((provider: WeatherProviderData) => {
+      rows.push({
+        provider: provider.provider,
+        temperature: provider.temperature,
+        humidity: provider.humidity,
+        windSpeed: provider.windSpeed,
+        precipitationProbability: provider.precipitationProbability,
+        weatherStatus: provider.weatherStatus,
+        isAggregated: false
+      });
+    });
+
+    return rows;
+  }
 }

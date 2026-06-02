@@ -49,43 +49,6 @@
     </p>
   </div>
 
-  <div class="provider-section" *ngIf="weather.providerData.length > 0">
-    <div class="section-title">
-      <h3>Comparativa de proveedores</h3>
-      <p>Datos normalizados utilizados para calcular la predicción agregada.</p>
-    </div>
-
-    <div class="provider-grid-wrapper">
-      <div class="provider-card" *ngFor="let provider of weather.providerData">
-        <h4>{{ provider.provider }}</h4>
-
-        <div class="provider-grid">
-          <div>
-            <span>Temperatura</span>
-            <strong>{{ provider.temperature | number:'1.1-1' }}°C</strong>
-          </div>
-
-          <div>
-            <span>Humedad</span>
-            <strong>{{ provider.humidity }}%</strong>
-          </div>
-
-          <div>
-            <span>Viento</span>
-            <strong>{{ provider.windSpeed | number:'1.1-1' }} km/h</strong>
-          </div>
-
-          <div>
-            <span>Lluvia</span>
-            <strong>{{ provider.precipitationProbability }}%</strong>
-          </div>
-        </div>
-
-        <p>{{ provider.weatherStatus }}</p>
-      </div>
-    </div>
-  </div>
-
   <div class="hourly-section" *ngIf="weather.hourlyForecast.length > 0">
     <div class="section-title">
       <h3>Predicción por horas</h3>
