@@ -6,12 +6,14 @@ import com.weatherandgo.backend.model.NormalizedWeatherData;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.core.annotation.Order;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Component
+@Order(1)
 public class OpenMeteoClient implements WeatherProviderClient {
 
     private static final String PROVIDER_NAME = "OPEN_METEO";

@@ -22,6 +22,15 @@ export interface HourlyForecast {
   viento: number;
 }
 
+export interface WeatherProviderData {
+  provider: string;
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  precipitationProbability: number;
+  weatherStatus: string;
+}
+
 export interface WeatherData {
   id: string;
   ciudad: string;
@@ -38,6 +47,21 @@ export interface WeatherData {
   categoriaRecomendada: string;
   forecast: ForecastDay[];
   hourlyForecast: HourlyForecast[];
+  providerData: WeatherProviderData[];
+}
+
+export interface WeatherQueryLog {
+  id: number;
+  latitude: number;
+  longitude: number;
+  locationName: string;
+  currentTemperature: number;
+  currentHumidity: number;
+  currentWindSpeed: number;
+  currentPrecipitationProbability: number;
+  currentWeatherStatus: string;
+  providers: string;
+  createdAt: string;
 }
 
 interface BackendHourlyForecast {
@@ -64,6 +88,15 @@ interface BackendWeatherSource {
   status: string;
 }
 
+interface BackendWeatherProviderData {
+  provider: string;
+  temperature: number;
+  humidity: number;
+  windSpeed: number;
+  precipitationProbability: number;
+  weatherStatus: string;
+}
+
 interface BackendWeatherForecastResponse {
   locationName: string;
   latitude: number;
@@ -78,6 +111,7 @@ interface BackendWeatherForecastResponse {
   hourlyForecast: BackendHourlyForecast[];
   dailyForecast: BackendDailyForecast[];
   sources: BackendWeatherSource[];
+  providerData: BackendWeatherProviderData[];
 }
 
 interface CityLocation {
@@ -93,6 +127,7 @@ interface CityLocation {
 export class WeatherService {
 
   private readonly backendUrl = 'http://localhost:8080/api/weather/forecast';
+  private readonly logsUrl = 'http://localhost:8080/api/weather/logs';
 
   private readonly cityLocations: CityLocation[] = [
     {
@@ -136,18 +171,18 @@ export class WeatherService {
   constructor(private http: HttpClient) { }
 
   getWeatherList(): Observable<WeatherData[]> {
-  const requests = this.cityLocations.map(city =>
-    this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad).pipe(
-      catchError(error => {
-        console.error(`Error cargando datos de ${city.ciudad}`, error);
-        return of(null);
-      })
-    )
-  );
+    const requests = this.cityLocations.map(city =>
+      this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad).pipe(
+        catchError(error => {
+          console.error(`Error cargando datos de ${city.ciudad}`, error);
+          return of(null);
+        })
+      )
+    );
 
-  return forkJoin(requests).pipe(
-    map(results => results.filter((item): item is WeatherData => item !== null))
-  );
+    return forkJoin(requests).pipe(
+      map(results => results.filter((item): item is WeatherData => item !== null))
+    );
   }
 
   getWeatherById(id: string): Observable<WeatherData | undefined> {
@@ -175,6 +210,22 @@ export class WeatherService {
     return this.http.get<BackendWeatherForecastResponse>(url).pipe(
       map(response => this.mapBackendResponseToWeatherData(response, id, ciudad))
     );
+  }
+
+  getWeatherLogs(): Observable<WeatherQueryLog[]> {
+    return this.http.get<WeatherQueryLog[]>(this.logsUrl);
+  }
+
+  getLatestWeatherLogs(): Observable<WeatherQueryLog[]> {
+    return this.http.get<WeatherQueryLog[]>(`${this.logsUrl}/latest`);
+  }
+
+  getWeatherLogsCount(): Observable<number> {
+    return this.http.get<number>(`${this.logsUrl}/count`);
+  }
+
+  deleteWeatherLogs(): Observable<void> {
+    return this.http.delete<void>(this.logsUrl);
   }
 
   private mapBackendResponseToWeatherData(
@@ -205,7 +256,8 @@ export class WeatherService {
       recomendacion: response.currentRecommendation,
       categoriaRecomendada: this.getRecommendationCategory(response),
       forecast: this.mapDailyForecast(response),
-      hourlyForecast: this.mapHourlyForecast(response)
+      hourlyForecast: this.mapHourlyForecast(response),
+      providerData: this.mapProviderData(response)
     };
   }
 
@@ -237,6 +289,21 @@ export class WeatherService {
       estadoCielo: hour.weatherStatus,
       probabilidadLluvia: hour.precipitationProbability,
       viento: Math.round(hour.windSpeed)
+    }));
+  }
+
+  private mapProviderData(response: BackendWeatherForecastResponse): WeatherProviderData[] {
+    if (!response.providerData) {
+      return [];
+    }
+
+    return response.providerData.map(provider => ({
+      provider: provider.provider,
+      temperature: provider.temperature,
+      humidity: provider.humidity,
+      windSpeed: provider.windSpeed,
+      precipitationProbability: provider.precipitationProbability,
+      weatherStatus: provider.weatherStatus
     }));
   }
 

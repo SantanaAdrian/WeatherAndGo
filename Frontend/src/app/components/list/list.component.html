@@ -1,90 +1,145 @@
-<div class="container mt-4" *ngIf="selectedWeather">
+<section class="forecast-page" *ngIf="selectedWeather as weather">
 
-  <div class="row mb-4">
-    <div class="col-12">
-      <h2 class="text-center">Predicción meteorológica</h2>
-      <p class="text-center text-muted">
-        Previsión por horas y por días para {{ selectedWeather.ciudad }}.
-      </p>
+  <div class="forecast-header">
+    <div>
+      <h2>Predicción meteorológica</h2>
+      <p>{{ weather.ciudad }}</p>
+    </div>
+
+    <div class="forecast-location">
+      <span>Latitud: {{ weather.latitud | number:'1.4-4' }}</span>
+      <span>Longitud: {{ weather.longitud | number:'1.4-4' }}</span>
     </div>
   </div>
 
-  <div class="row mb-5">
-    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
-      <h3 class="mb-0">Predicción por horas</h3>
-
-      <button class="btn btn-outline-info" routerLink="/list-table">
-        Ver otras ubicaciones
-      </button>
+  <div class="current-weather-card">
+    <div class="current-main">
+      <h3>{{ weather.temperatura }}°C</h3>
+      <p>{{ weather.estadoCielo }}</p>
     </div>
 
-    <div class="col-md-2 col-sm-4 col-6 mb-3" *ngFor="let hour of hourlyForecast">
-      <div class="card hourly-card h-100">
-        <div class="card-body text-center">
-          <h5 class="hour-title">{{ hour.hora }}</h5>
+    <div class="current-details">
+      <div>
+        <span>Humedad</span>
+        <strong>{{ weather.humedad }}%</strong>
+      </div>
 
-          <div class="hour-temperature">
-            {{ hour.temperatura }}°C
+      <div>
+        <span>Viento</span>
+        <strong>{{ weather.viento }} km/h</strong>
+      </div>
+
+      <div>
+        <span>Lluvia</span>
+        <strong>{{ weather.probabilidadLluvia }}%</strong>
+      </div>
+
+      <div>
+        <span>Categoría</span>
+        <strong>{{ weather.categoriaRecomendada }}</strong>
+      </div>
+    </div>
+
+    <p class="current-description">
+      {{ weather.descripcion }}
+    </p>
+
+    <p class="current-recommendation">
+      {{ weather.recomendacion }}
+    </p>
+  </div>
+
+  <div class="provider-section" *ngIf="weather.providerData.length > 0">
+    <div class="section-title">
+      <h3>Comparativa de proveedores</h3>
+      <p>Datos normalizados utilizados para calcular la predicción agregada.</p>
+    </div>
+
+    <div class="provider-grid-wrapper">
+      <div class="provider-card" *ngFor="let provider of weather.providerData">
+        <h4>{{ provider.provider }}</h4>
+
+        <div class="provider-grid">
+          <div>
+            <span>Temperatura</span>
+            <strong>{{ provider.temperature | number:'1.1-1' }}°C</strong>
           </div>
 
-          <p class="hour-status">
-            {{ hour.estadoCielo }}
-          </p>
+          <div>
+            <span>Humedad</span>
+            <strong>{{ provider.humidity }}%</strong>
+          </div>
 
-          <small>Lluvia: {{ hour.probabilidadLluvia }}%</small>
-          <br>
-          <small>Viento: {{ hour.viento }} km/h</small>
+          <div>
+            <span>Viento</span>
+            <strong>{{ provider.windSpeed | number:'1.1-1' }} km/h</strong>
+          </div>
+
+          <div>
+            <span>Lluvia</span>
+            <strong>{{ provider.precipitationProbability }}%</strong>
+          </div>
         </div>
+
+        <p>{{ provider.weatherStatus }}</p>
       </div>
     </div>
   </div>
 
-  <div class="row mb-4">
-    <div class="col-12 mb-3">
+  <div class="hourly-section" *ngIf="weather.hourlyForecast.length > 0">
+    <div class="section-title">
+      <h3>Predicción por horas</h3>
+      <p>Evolución meteorológica estimada durante el día.</p>
+    </div>
+
+    <div class="hourly-grid">
+      <div class="hour-card" *ngFor="let hour of weather.hourlyForecast">
+        <h4>{{ hour.hora }}</h4>
+        <strong>{{ hour.temperatura }}°C</strong>
+        <span>{{ hour.estadoCielo }}</span>
+        <small>Lluvia: {{ hour.probabilidadLluvia }}%</small>
+        <small>Viento: {{ hour.viento }} km/h</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="daily-section" *ngIf="weather.forecast.length > 0">
+    <div class="section-title">
       <h3>Predicción por días</h3>
-      <p class="text-muted mb-0">
-        Evolución prevista para los próximos días.
-      </p>
+      <p>Resumen meteorológico para los próximos días.</p>
     </div>
 
-    <div class="col-md-6 col-lg-4 mb-4" *ngFor="let day of selectedWeather.forecast">
-      <div class="card h-100 day-card">
-        <div class="card-body">
-
-          <div class="day-header">
-            <h4 class="mb-0">{{ getDayName(day.fecha) }}</h4>
-            <small>{{ getShortDate(day.fecha) }}</small>
-          </div>
-
-          <div class="day-weather mt-3">
-            {{ day.estadoCielo }}
-          </div>
-
-          <div class="temperature-range mt-3 mb-3">
-            <div>
-              <span>Máxima</span>
-              <strong>{{ day.temperaturaMaxima }}°C</strong>
-            </div>
-
-            <div>
-              <span>Mínima</span>
-              <strong>{{ day.temperaturaMinima }}°C</strong>
-            </div>
-          </div>
-
-          <div class="day-data">
-            <p><strong>Humedad:</strong> {{ day.humedad }}%</p>
-            <p><strong>Viento:</strong> {{ day.viento }} km/h</p>
-            <p><strong>Lluvia:</strong> {{ day.probabilidadLluvia }}%</p>
-          </div>
-
-          <div class="alert alert-secondary mb-0 mt-3">
-            {{ day.recomendacion }}
-          </div>
-
+    <div class="daily-grid">
+      <div class="daily-card" *ngFor="let day of weather.forecast">
+        <div class="daily-date">
+          <h4>{{ day.fecha | date:'EEEE':'':'es' }}</h4>
+          <span>{{ day.fecha | date:'dd/MM/yyyy' }}</span>
         </div>
+
+        <div class="daily-temperature">
+          <strong>{{ day.temperaturaMaxima }}°C</strong>
+          <span>{{ day.temperaturaMinima }}°C</span>
+        </div>
+
+        <p>{{ day.estadoCielo }}</p>
+
+        <div class="daily-data">
+          <span>Lluvia: {{ day.probabilidadLluvia }}%</span>
+          <span>Viento: {{ day.viento }} km/h</span>
+          <span>Humedad: {{ day.humedad }}%</span>
+        </div>
+
+        <p class="daily-recommendation">
+          {{ day.recomendacion }}
+        </p>
       </div>
     </div>
   </div>
 
-</div>
+  <div class="back-section">
+    <a class="btn btn-outline-info" routerLink="/list-table">
+      Ver otras ubicaciones
+    </a>
+  </div>
+
+</section>

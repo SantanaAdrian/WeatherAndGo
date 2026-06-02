@@ -3,7 +3,9 @@ package com.weatherandgo.backend.service;
 import com.weatherandgo.backend.client.WeatherProviderClient;
 import com.weatherandgo.backend.dto.DailyForecastResponse;
 import com.weatherandgo.backend.dto.HourlyForecastResponse;
+import com.weatherandgo.backend.dto.WeatherAggregationSummaryResponse;
 import com.weatherandgo.backend.dto.WeatherForecastResponse;
+import com.weatherandgo.backend.dto.WeatherProviderDataResponse;
 import com.weatherandgo.backend.dto.WeatherSourceResponse;
 import com.weatherandgo.backend.model.NormalizedDailyForecast;
 import com.weatherandgo.backend.model.NormalizedHourlyForecast;
@@ -23,17 +25,20 @@ public class WeatherAggregationService {
     private final WeatherRecommendationService weatherRecommendationService;
     private final LocationService locationService;
     private final WeatherQueryLogService weatherQueryLogService;
+    private final WeatherProviderLogService weatherProviderLogService;
 
     public WeatherAggregationService(
-        List<WeatherProviderClient> weatherProviderClients,
-        WeatherRecommendationService weatherRecommendationService,
-        LocationService locationService,
-        WeatherQueryLogService weatherQueryLogService
+            List<WeatherProviderClient> weatherProviderClients,
+            WeatherRecommendationService weatherRecommendationService,
+            LocationService locationService,
+            WeatherQueryLogService weatherQueryLogService,
+            WeatherProviderLogService weatherProviderLogService
     ) {
         this.weatherProviderClients = weatherProviderClients;
         this.weatherRecommendationService = weatherRecommendationService;
         this.locationService = locationService;
         this.weatherQueryLogService = weatherQueryLogService;
+        this.weatherProviderLogService = weatherProviderLogService;
     }
 
     public WeatherForecastResponse getForecast(Double latitude, Double longitude) {
@@ -43,10 +48,20 @@ public class WeatherAggregationService {
         for (WeatherProviderClient providerClient : weatherProviderClients) {
             try {
                 NormalizedWeatherData providerData = providerClient.getForecast(latitude, longitude);
+
                 providerDataList.add(providerData);
                 sources.add(new WeatherSourceResponse(providerClient.getProviderName(), "OK"));
+
+                weatherProviderLogService.saveSuccessfulProviderData(providerData);
+
             } catch (Exception exception) {
                 sources.add(new WeatherSourceResponse(providerClient.getProviderName(), "FAILED"));
+
+                weatherProviderLogService.saveFailedProviderData(
+                        providerClient.getProviderName(),
+                        latitude,
+                        longitude
+                );
             }
         }
 
@@ -56,7 +71,7 @@ public class WeatherAggregationService {
 
         NormalizedWeatherData aggregatedData = aggregateProviderData(providerDataList);
 
-        WeatherForecastResponse response = mapToResponse(aggregatedData);
+        WeatherForecastResponse response = mapToResponse(aggregatedData, providerDataList);
         response.setSources(sources);
 
         weatherQueryLogService.saveQuery(response);
@@ -65,28 +80,47 @@ public class WeatherAggregationService {
     }
 
     private NormalizedWeatherData aggregateProviderData(List<NormalizedWeatherData> providerDataList) {
-        NormalizedWeatherData firstProviderData = providerDataList.get(0);
+        NormalizedWeatherData baseProviderData = findProviderWithForecastData(providerDataList);
 
         NormalizedWeatherData aggregatedData = new NormalizedWeatherData();
 
         aggregatedData.setProviderName("AGGREGATED");
-        aggregatedData.setLatitude(firstProviderData.getLatitude());
-        aggregatedData.setLongitude(firstProviderData.getLongitude());
-        aggregatedData.setTimezone(firstProviderData.getTimezone());
+        aggregatedData.setLatitude(baseProviderData.getLatitude());
+        aggregatedData.setLongitude(baseProviderData.getLongitude());
+        aggregatedData.setTimezone(baseProviderData.getTimezone());
 
         aggregatedData.setCurrentTemperature(calculateAverageTemperature(providerDataList));
         aggregatedData.setCurrentHumidity(calculateAverageHumidity(providerDataList));
         aggregatedData.setCurrentWindSpeed(calculateAverageWindSpeed(providerDataList));
-        aggregatedData.setCurrentPrecipitationProbability(calculateMaxPrecipitationProbability(providerDataList));
+        aggregatedData.setCurrentPrecipitationProbability(calculateConservativePrecipitationProbability(providerDataList));
         aggregatedData.setCurrentWeatherStatus(selectMostRestrictiveWeatherStatus(providerDataList));
 
-        aggregatedData.setHourlyForecast(firstProviderData.getHourlyForecast());
-        aggregatedData.setDailyForecast(firstProviderData.getDailyForecast());
+        aggregatedData.setHourlyForecast(baseProviderData.getHourlyForecast());
+        aggregatedData.setDailyForecast(baseProviderData.getDailyForecast());
 
         return aggregatedData;
     }
 
-    private WeatherForecastResponse mapToResponse(NormalizedWeatherData data) {
+    private NormalizedWeatherData findProviderWithForecastData(List<NormalizedWeatherData> providerDataList) {
+        for (NormalizedWeatherData providerData : providerDataList) {
+            boolean hasHourlyForecast = providerData.getHourlyForecast() != null
+                    && !providerData.getHourlyForecast().isEmpty();
+
+            boolean hasDailyForecast = providerData.getDailyForecast() != null
+                    && !providerData.getDailyForecast().isEmpty();
+
+            if (hasHourlyForecast && hasDailyForecast) {
+                return providerData;
+            }
+        }
+
+        return providerDataList.get(0);
+    }
+
+    private WeatherForecastResponse mapToResponse(
+            NormalizedWeatherData data,
+            List<NormalizedWeatherData> providerDataList
+    ) {
         WeatherForecastResponse response = new WeatherForecastResponse();
 
         response.setLocationName(locationService.resolveLocationName(data.getLatitude(), data.getLongitude()));
@@ -111,6 +145,8 @@ public class WeatherAggregationService {
 
         response.setHourlyForecast(mapHourlyForecast(data.getHourlyForecast()));
         response.setDailyForecast(mapDailyForecast(data.getDailyForecast()));
+        response.setProviderData(mapProviderData(providerDataList));
+        response.setAggregationSummary(buildAggregationSummary(providerDataList));
 
         return response;
     }
@@ -163,34 +199,90 @@ public class WeatherAggregationService {
         return response;
     }
 
+    private List<WeatherProviderDataResponse> mapProviderData(List<NormalizedWeatherData> providerDataList) {
+        List<WeatherProviderDataResponse> response = new ArrayList<>();
+
+        if (providerDataList == null) {
+            return response;
+        }
+
+        for (NormalizedWeatherData providerData : providerDataList) {
+            response.add(new WeatherProviderDataResponse(
+                    providerData.getProviderName(),
+                    providerData.getCurrentTemperature(),
+                    providerData.getCurrentHumidity(),
+                    providerData.getCurrentWindSpeed(),
+                    providerData.getCurrentPrecipitationProbability(),
+                    providerData.getCurrentWeatherStatus()
+            ));
+        }
+
+        return response;
+    }
+
+    private WeatherAggregationSummaryResponse buildAggregationSummary(List<NormalizedWeatherData> providerDataList) {
+        int providerCount = providerDataList == null ? 0 : providerDataList.size();
+
+        Double temperatureDifference = calculateTemperatureDifference(providerDataList);
+        Integer humidityDifference = calculateHumidityDifference(providerDataList);
+        Double windSpeedDifference = calculateWindSpeedDifference(providerDataList);
+        Integer precipitationDifference = calculatePrecipitationDifference(providerDataList);
+
+        String reliabilityLevel = calculateReliabilityLevel(
+                providerCount,
+                temperatureDifference,
+                humidityDifference,
+                windSpeedDifference,
+                precipitationDifference
+        );
+
+        String explanation = buildReliabilityExplanation(reliabilityLevel, providerCount);
+
+        return new WeatherAggregationSummaryResponse(
+                providerCount,
+                temperatureDifference,
+                humidityDifference,
+                windSpeedDifference,
+                precipitationDifference,
+                reliabilityLevel,
+                explanation
+        );
+    }
+
     private Double calculateAverageTemperature(List<NormalizedWeatherData> providerDataList) {
-        return providerDataList.stream()
+        double average = providerDataList.stream()
                 .map(NormalizedWeatherData::getCurrentTemperature)
                 .filter(value -> value != null)
                 .mapToDouble(Double::doubleValue)
                 .average()
                 .orElse(0);
+
+        return roundOneDecimal(average);
     }
 
     private Integer calculateAverageHumidity(List<NormalizedWeatherData> providerDataList) {
-        return (int) Math.round(providerDataList.stream()
+        double average = providerDataList.stream()
                 .map(NormalizedWeatherData::getCurrentHumidity)
                 .filter(value -> value != null)
                 .mapToInt(Integer::intValue)
                 .average()
-                .orElse(0));
+                .orElse(0);
+
+        return (int) Math.round(average);
     }
 
     private Double calculateAverageWindSpeed(List<NormalizedWeatherData> providerDataList) {
-        return providerDataList.stream()
+        double average = providerDataList.stream()
                 .map(NormalizedWeatherData::getCurrentWindSpeed)
                 .filter(value -> value != null)
                 .mapToDouble(Double::doubleValue)
                 .average()
                 .orElse(0);
+
+        return roundOneDecimal(average);
     }
 
-    private Integer calculateMaxPrecipitationProbability(List<NormalizedWeatherData> providerDataList) {
+    private Integer calculateConservativePrecipitationProbability(List<NormalizedWeatherData> providerDataList) {
         return providerDataList.stream()
                 .map(NormalizedWeatherData::getCurrentPrecipitationProbability)
                 .filter(value -> value != null)
@@ -200,11 +292,181 @@ public class WeatherAggregationService {
     }
 
     private String selectMostRestrictiveWeatherStatus(List<NormalizedWeatherData> providerDataList) {
-        return providerDataList.stream()
-                .map(NormalizedWeatherData::getCurrentWeatherStatus)
-                .filter(value -> value != null && !value.isBlank())
-                .findFirst()
-                .orElse("Desconocido");
+        String selectedStatus = "Desconocido";
+        int highestSeverity = -1;
+
+        for (NormalizedWeatherData providerData : providerDataList) {
+            String status = providerData.getCurrentWeatherStatus();
+
+            if (status == null || status.isBlank()) {
+                continue;
+            }
+
+            int severity = getWeatherSeverity(status);
+
+            if (severity > highestSeverity) {
+                highestSeverity = severity;
+                selectedStatus = status;
+            }
+        }
+
+        return selectedStatus;
+    }
+
+    private int getWeatherSeverity(String weatherStatus) {
+        String status = weatherStatus.toLowerCase();
+
+        if (status.contains("tormenta")) {
+            return 100;
+        }
+
+        if (status.contains("nieve")) {
+            return 90;
+        }
+
+        if (status.contains("granizo")) {
+            return 85;
+        }
+
+        if (status.contains("lluvia") || status.contains("llovizna") || status.contains("chubasco")) {
+            return 80;
+        }
+
+        if (status.contains("niebla")) {
+            return 70;
+        }
+
+        if (status.contains("nuboso") || status.contains("nubes")) {
+            return 50;
+        }
+
+        if (status.contains("parcialmente")) {
+            return 40;
+        }
+
+        if (status.contains("despejado") || status.contains("soleado") || status.contains("cielo claro")) {
+            return 10;
+        }
+
+        return 0;
+    }
+
+    private Double calculateTemperatureDifference(List<NormalizedWeatherData> providerDataList) {
+        List<Double> values = providerDataList.stream()
+                .map(NormalizedWeatherData::getCurrentTemperature)
+                .filter(value -> value != null)
+                .toList();
+
+        if (values.size() < 2) {
+            return 0.0;
+        }
+
+        double min = values.stream().mapToDouble(Double::doubleValue).min().orElse(0);
+        double max = values.stream().mapToDouble(Double::doubleValue).max().orElse(0);
+
+        return roundOneDecimal(max - min);
+    }
+
+    private Integer calculateHumidityDifference(List<NormalizedWeatherData> providerDataList) {
+        List<Integer> values = providerDataList.stream()
+                .map(NormalizedWeatherData::getCurrentHumidity)
+                .filter(value -> value != null)
+                .toList();
+
+        if (values.size() < 2) {
+            return 0;
+        }
+
+        int min = values.stream().mapToInt(Integer::intValue).min().orElse(0);
+        int max = values.stream().mapToInt(Integer::intValue).max().orElse(0);
+
+        return max - min;
+    }
+
+    private Double calculateWindSpeedDifference(List<NormalizedWeatherData> providerDataList) {
+        List<Double> values = providerDataList.stream()
+                .map(NormalizedWeatherData::getCurrentWindSpeed)
+                .filter(value -> value != null)
+                .toList();
+
+        if (values.size() < 2) {
+            return 0.0;
+        }
+
+        double min = values.stream().mapToDouble(Double::doubleValue).min().orElse(0);
+        double max = values.stream().mapToDouble(Double::doubleValue).max().orElse(0);
+
+        return roundOneDecimal(max - min);
+    }
+
+    private Integer calculatePrecipitationDifference(List<NormalizedWeatherData> providerDataList) {
+        List<Integer> values = providerDataList.stream()
+                .map(NormalizedWeatherData::getCurrentPrecipitationProbability)
+                .filter(value -> value != null)
+                .toList();
+
+        if (values.size() < 2) {
+            return 0;
+        }
+
+        int min = values.stream().mapToInt(Integer::intValue).min().orElse(0);
+        int max = values.stream().mapToInt(Integer::intValue).max().orElse(0);
+
+        return max - min;
+    }
+
+    private String calculateReliabilityLevel(
+            int providerCount,
+            Double temperatureDifference,
+            Integer humidityDifference,
+            Double windSpeedDifference,
+            Integer precipitationDifference
+    ) {
+        if (providerCount < 2) {
+            return "MEDIA";
+        }
+
+        boolean highReliability =
+                temperatureDifference <= 2.5
+                        && humidityDifference <= 15
+                        && windSpeedDifference <= 10
+                        && precipitationDifference <= 25;
+
+        if (highReliability) {
+            return "ALTA";
+        }
+
+        boolean mediumReliability =
+                temperatureDifference <= 5
+                        && humidityDifference <= 25
+                        && windSpeedDifference <= 20
+                        && precipitationDifference <= 50;
+
+        if (mediumReliability) {
+            return "MEDIA";
+        }
+
+        return "BAJA";
+    }
+
+    private String buildReliabilityExplanation(String reliabilityLevel, int providerCount) {
+        if (providerCount < 2) {
+            return "La predicción se basa en un único proveedor disponible, por lo que no se puede realizar una comparación completa entre fuentes.";
+        }
+
+        if ("ALTA".equals(reliabilityLevel)) {
+            return "Los proveedores consultados ofrecen valores similares, por lo que la predicción agregada presenta una fiabilidad alta.";
+        }
+
+        if ("MEDIA".equals(reliabilityLevel)) {
+            return "Los proveedores consultados presentan algunas diferencias, aunque dentro de un margen aceptable para generar una predicción agregada.";
+        }
+
+        return "Los proveedores consultados presentan diferencias relevantes. Se recomienda interpretar la predicción agregada con precaución.";
+    }
+
+    private Double roundOneDecimal(Double value) {
+        return Math.round(value * 10.0) / 10.0;
     }
 
     private String getDayName(String date) {

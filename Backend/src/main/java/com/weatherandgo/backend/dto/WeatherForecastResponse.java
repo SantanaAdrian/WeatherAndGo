@@ -20,41 +20,14 @@ public class WeatherForecastResponse {
     private List<HourlyForecastResponse> hourlyForecast;
     private List<DailyForecastResponse> dailyForecast;
     private List<WeatherSourceResponse> sources;
+    private List<WeatherProviderDataResponse> providerData;
+    private WeatherAggregationSummaryResponse aggregationSummary;
 
     public WeatherForecastResponse() {
         this.hourlyForecast = new ArrayList<>();
         this.dailyForecast = new ArrayList<>();
         this.sources = new ArrayList<>();
-    }
-
-    public WeatherForecastResponse(
-            String locationName,
-            Double latitude,
-            Double longitude,
-            String timezone,
-            Double currentTemperature,
-            Integer currentHumidity,
-            Double currentWindSpeed,
-            Integer currentPrecipitationProbability,
-            String currentWeatherStatus,
-            String currentRecommendation,
-            List<HourlyForecastResponse> hourlyForecast,
-            List<DailyForecastResponse> dailyForecast,
-            List<WeatherSourceResponse> sources
-    ) {
-        this.locationName = locationName;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.timezone = timezone;
-        this.currentTemperature = currentTemperature;
-        this.currentHumidity = currentHumidity;
-        this.currentWindSpeed = currentWindSpeed;
-        this.currentPrecipitationProbability = currentPrecipitationProbability;
-        this.currentWeatherStatus = currentWeatherStatus;
-        this.currentRecommendation = currentRecommendation;
-        this.hourlyForecast = hourlyForecast;
-        this.dailyForecast = dailyForecast;
-        this.sources = sources;
+        this.providerData = new ArrayList<>();
     }
 
     public String getLocationName() {
@@ -159,5 +132,21 @@ public class WeatherForecastResponse {
 
     public void setSources(List<WeatherSourceResponse> sources) {
         this.sources = sources;
+    }
+
+    public List<WeatherProviderDataResponse> getProviderData() {
+        return providerData;
+    }
+
+    public void setProviderData(List<WeatherProviderDataResponse> providerData) {
+        this.providerData = providerData;
+    }
+
+    public WeatherAggregationSummaryResponse getAggregationSummary() {
+        return aggregationSummary;
+    }
+
+    public void setAggregationSummary(WeatherAggregationSummaryResponse aggregationSummary) {
+        this.aggregationSummary = aggregationSummary;
     }
 }
