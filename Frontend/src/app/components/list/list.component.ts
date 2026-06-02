@@ -2,14 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WeatherData, WeatherService } from 'src/app/services/weather.service';
 
-interface HourlyForecast {
-  hora: string;
-  temperatura: number;
-  estadoCielo: string;
-  probabilidadLluvia: number;
-  viento: number;
-}
-
 @Component({
   selector: 'app-list',
   templateUrl: './list.component.html',
@@ -18,7 +10,6 @@ interface HourlyForecast {
 export class ListComponent implements OnInit {
 
   selectedWeather?: WeatherData;
-  hourlyForecast: HourlyForecast[] = [];
 
   constructor(
     private weatherService: WeatherService,
@@ -42,7 +33,7 @@ export class ListComponent implements OnInit {
         }
 
         this.selectedWeather = result;
-        this.hourlyForecast = this.buildHourlyForecast(result);
+
       },
       error: () => {
         this.router.navigate(['error']);
@@ -51,53 +42,6 @@ export class ListComponent implements OnInit {
         console.log('Predicción cargada correctamente');
       }
     });
-  }
-
-  buildHourlyForecast(weather: WeatherData): HourlyForecast[] {
-    return [
-      {
-        hora: '08:00',
-        temperatura: weather.temperatura - 3,
-        estadoCielo: weather.estadoCielo,
-        probabilidadLluvia: weather.probabilidadLluvia,
-        viento: weather.viento
-      },
-      {
-        hora: '11:00',
-        temperatura: weather.temperatura - 1,
-        estadoCielo: weather.estadoCielo,
-        probabilidadLluvia: weather.probabilidadLluvia,
-        viento: weather.viento + 1
-      },
-      {
-        hora: '14:00',
-        temperatura: weather.temperatura + 2,
-        estadoCielo: weather.estadoCielo,
-        probabilidadLluvia: Math.max(weather.probabilidadLluvia - 10, 0),
-        viento: weather.viento + 2
-      },
-      {
-        hora: '17:00',
-        temperatura: weather.temperatura + 1,
-        estadoCielo: weather.estadoCielo,
-        probabilidadLluvia: weather.probabilidadLluvia,
-        viento: weather.viento + 1
-      },
-      {
-        hora: '20:00',
-        temperatura: weather.temperatura - 1,
-        estadoCielo: weather.estadoCielo,
-        probabilidadLluvia: weather.probabilidadLluvia + 5,
-        viento: weather.viento
-      },
-      {
-        hora: '23:00',
-        temperatura: weather.temperatura - 3,
-        estadoCielo: weather.estadoCielo,
-        probabilidadLluvia: weather.probabilidadLluvia + 5,
-        viento: Math.max(weather.viento - 2, 0)
-      }
-    ];
   }
 
   getDayName(fecha: string): string {
@@ -115,5 +59,4 @@ export class ListComponent implements OnInit {
       month: 'long'
     });
   }
-
 }

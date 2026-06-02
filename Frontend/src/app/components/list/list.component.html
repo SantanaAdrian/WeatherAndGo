@@ -112,8 +112,8 @@
     <div class="daily-grid">
       <div class="daily-card" *ngFor="let day of weather.forecast">
         <div class="daily-date">
-          <h4>{{ day.fecha | date:'EEEE':'':'es' }}</h4>
-          <span>{{ day.fecha | date:'dd/MM/yyyy' }}</span>
+          <h4>{{ getDayName(day.fecha) }}</h4>
+          <span>{{ getShortDate(day.fecha) }}</span>
         </div>
 
         <div class="daily-temperature">
