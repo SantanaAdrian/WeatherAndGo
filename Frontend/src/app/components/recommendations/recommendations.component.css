@@ -1,0 +1,195 @@
+.recommendations-page {
+  min-height: 80vh;
+  padding: 2rem 7%;
+  background-color: #151818;
+  color: #e8e3dc;
+}
+
+.recommendations-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.recommendations-header h2 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.recommendations-header p {
+  color: #b8aa9a;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.recommendations-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.city-selector {
+  min-width: 280px;
+}
+
+.city-selector label {
+  display: block;
+  color: #b8aa9a;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.form-select {
+  background-color: #181c1c;
+  color: #e8e3dc;
+  border: 1px solid #323838;
+}
+
+.form-select:focus {
+  box-shadow: none;
+  border-color: #0dcaf0;
+}
+
+.recommendation-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.weather-context-card,
+.ai-recommendation-card {
+  border: 1px solid #323838;
+  background-color: #181c1c;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.weather-context-card h3,
+.ai-recommendation-card h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+}
+
+.weather-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+}
+
+.weather-context-grid div {
+  border: 1px solid #323838;
+  border-radius: 0.8rem;
+  padding: 1rem;
+  background-color: #1d2222;
+}
+
+.weather-context-grid span {
+  display: block;
+  color: #b8aa9a;
+  margin-bottom: 0.4rem;
+}
+
+.weather-context-grid strong {
+  color: #ffffff;
+}
+
+.ai-main-info {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+}
+
+.category-badge,
+.confidence-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-weight: 700;
+}
+
+.category-badge {
+  background-color: #073f4a;
+  border: 1px solid #0dcaf0;
+  color: #ffffff;
+}
+
+.confidence-badge {
+  background-color: #2b2b20;
+  border: 1px solid #b8aa9a;
+  color: #e8e3dc;
+}
+
+.ai-summary {
+  color: #ffffff;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.ai-columns {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
+}
+
+.ai-columns h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.7rem;
+}
+
+.ai-columns ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.ai-columns li {
+  color: #d6cec3;
+  margin-bottom: 0.4rem;
+}
+
+.info-message,
+.error-message {
+  padding: 1rem;
+  border-radius: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.info-message {
+  background-color: #083f4a;
+  border: 1px solid #0bbbd6;
+}
+
+.error-message {
+  background-color: #4a1010;
+  border: 1px solid #e04b4b;
+}
+
+@media (max-width: 992px) {
+  .recommendation-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .recommendations-page {
+    padding: 1.5rem 5%;
+  }
+
+  .weather-context-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendations-header h2 {
+    font-size: 2rem;
+  }
+}

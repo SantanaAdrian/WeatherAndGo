@@ -5,17 +5,20 @@ import { ListComponent } from './components/list/list.component';
 import { ListTableComponent } from './components/list-table/list-table.component';
 import { ErrorComponent } from './components/error/error.component';
 import { DetailComponent } from './components/detail/detail.component';
+import { RecommendationsComponent } from './components/recommendations/recommendations.component';
 
 const routes: Routes = [
 
   {path:"", component:HomeComponent},
   {path:"home", component:HomeComponent},
-  { path: 'list', component: ListComponent },
-{ path: 'list/:id', component: ListComponent },
+  {path: 'list', component: ListComponent },
+  {path: 'list/:id', component: ListComponent },
   {path:"detail/:id", component:DetailComponent},
   {path:"list-table", component:ListTableComponent},
   {path:"error", component:ErrorComponent},
-  {path:"**", component:ErrorComponent} //ESTE SIEMPRE EL ULTIMO
+  {path: 'recommendations', redirectTo: 'recommendations/bilbao', pathMatch: 'full' },
+  {path: 'recommendations/:id', component: RecommendationsComponent },
+  {path:"**", component:ErrorComponent}
 
 ];
 

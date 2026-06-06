@@ -7,6 +7,7 @@ import com.weatherandgo.backend.dto.WeatherAggregationSummaryResponse;
 import com.weatherandgo.backend.dto.WeatherForecastResponse;
 import com.weatherandgo.backend.dto.WeatherProviderDataResponse;
 import com.weatherandgo.backend.dto.WeatherSourceResponse;
+import com.weatherandgo.backend.dto.PlanRecommendationResponse;
 import com.weatherandgo.backend.model.NormalizedDailyForecast;
 import com.weatherandgo.backend.model.NormalizedHourlyForecast;
 import com.weatherandgo.backend.model.NormalizedWeatherData;
@@ -26,16 +27,19 @@ public class WeatherAggregationService {
     private final LocationService locationService;
     private final WeatherQueryLogService weatherQueryLogService;
     private final WeatherProviderLogService weatherProviderLogService;
+    private final RecommendationEngineClient recommendationEngineClient;
 
     public WeatherAggregationService(
-            List<WeatherProviderClient> weatherProviderClients,
-            WeatherRecommendationService weatherRecommendationService,
-            LocationService locationService,
-            WeatherQueryLogService weatherQueryLogService,
-            WeatherProviderLogService weatherProviderLogService
+        List<WeatherProviderClient> weatherProviderClients,
+        WeatherRecommendationService weatherRecommendationService,
+        RecommendationEngineClient recommendationEngineClient,
+        LocationService locationService,
+        WeatherQueryLogService weatherQueryLogService,
+        WeatherProviderLogService weatherProviderLogService
     ) {
         this.weatherProviderClients = weatherProviderClients;
         this.weatherRecommendationService = weatherRecommendationService;
+        this.recommendationEngineClient = recommendationEngineClient;
         this.locationService = locationService;
         this.weatherQueryLogService = weatherQueryLogService;
         this.weatherProviderLogService = weatherProviderLogService;
@@ -123,7 +127,9 @@ public class WeatherAggregationService {
     ) {
         WeatherForecastResponse response = new WeatherForecastResponse();
 
-        response.setLocationName(locationService.resolveLocationName(data.getLatitude(), data.getLongitude()));
+        String locationName = locationService.resolveLocationName(data.getLatitude(), data.getLongitude());
+
+        response.setLocationName(locationName);
         response.setLatitude(data.getLatitude());
         response.setLongitude(data.getLongitude());
         response.setTimezone(data.getTimezone());
@@ -134,19 +140,30 @@ public class WeatherAggregationService {
         response.setCurrentPrecipitationProbability(data.getCurrentPrecipitationProbability());
         response.setCurrentWeatherStatus(data.getCurrentWeatherStatus());
 
-        response.setCurrentRecommendation(
-                weatherRecommendationService.generateCurrentRecommendation(
-                        data.getCurrentPrecipitationProbability(),
-                        data.getCurrentTemperature(),
-                        data.getCurrentWindSpeed(),
-                        data.getCurrentWeatherStatus()
-                )
+        WeatherAggregationSummaryResponse aggregationSummary = buildAggregationSummary(providerDataList);
+
+        String fallbackRecommendation = weatherRecommendationService.generateCurrentRecommendation(
+                data.getCurrentPrecipitationProbability(),
+                data.getCurrentTemperature(),
+                data.getCurrentWindSpeed(),
+                data.getCurrentWeatherStatus()
         );
+
+        PlanRecommendationResponse planRecommendation = recommendationEngineClient.generatePlanRecommendation(
+                locationName,
+                data,
+                providerDataList,
+                aggregationSummary,
+                fallbackRecommendation
+        );
+
+        response.setCurrentRecommendation(planRecommendation.getSummary());
 
         response.setHourlyForecast(mapHourlyForecast(data.getHourlyForecast()));
         response.setDailyForecast(mapDailyForecast(data.getDailyForecast()));
         response.setProviderData(mapProviderData(providerDataList));
-        response.setAggregationSummary(buildAggregationSummary(providerDataList));
+        response.setAggregationSummary(aggregationSummary);
+        response.setPlanRecommendation(planRecommendation);
 
         return response;
     }

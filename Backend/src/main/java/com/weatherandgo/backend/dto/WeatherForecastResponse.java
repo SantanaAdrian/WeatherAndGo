@@ -22,6 +22,7 @@ public class WeatherForecastResponse {
     private List<WeatherSourceResponse> sources;
     private List<WeatherProviderDataResponse> providerData;
     private WeatherAggregationSummaryResponse aggregationSummary;
+    private PlanRecommendationResponse planRecommendation;
 
     public WeatherForecastResponse() {
         this.hourlyForecast = new ArrayList<>();
@@ -148,5 +149,13 @@ public class WeatherForecastResponse {
 
     public void setAggregationSummary(WeatherAggregationSummaryResponse aggregationSummary) {
         this.aggregationSummary = aggregationSummary;
+    }
+    
+    public PlanRecommendationResponse getPlanRecommendation() {
+        return planRecommendation;
+    }
+
+    public void setPlanRecommendation(PlanRecommendationResponse planRecommendation) {
+        this.planRecommendation = planRecommendation;
     }
 }

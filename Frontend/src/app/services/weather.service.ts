@@ -31,6 +31,14 @@ export interface WeatherProviderData {
   weatherStatus: string;
 }
 
+export interface PlanRecommendation {
+  category: string;
+  confidence: number;
+  summary: string;
+  recommendedPlanTypes: string[];
+  reasons: string[];
+}
+
 export interface WeatherData {
   id: string;
   ciudad: string;
@@ -48,6 +56,7 @@ export interface WeatherData {
   forecast: ForecastDay[];
   hourlyForecast: HourlyForecast[];
   providerData: WeatherProviderData[];
+  planRecommendation: PlanRecommendation;
 }
 
 export interface WeatherQueryLog {
@@ -97,6 +106,14 @@ interface BackendWeatherProviderData {
   weatherStatus: string;
 }
 
+interface BackendPlanRecommendation {
+  category: string;
+  confidence: number;
+  summary: string;
+  recommendedPlanTypes: string[];
+  reasons: string[];
+}
+
 interface BackendWeatherForecastResponse {
   locationName: string;
   latitude: number;
@@ -112,6 +129,7 @@ interface BackendWeatherForecastResponse {
   dailyForecast: BackendDailyForecast[];
   sources: BackendWeatherSource[];
   providerData: BackendWeatherProviderData[];
+  planRecommendation?: BackendPlanRecommendation;
 }
 
 interface CityLocation {
@@ -257,7 +275,8 @@ export class WeatherService {
       categoriaRecomendada: this.getRecommendationCategory(response),
       forecast: this.mapDailyForecast(response),
       hourlyForecast: this.mapHourlyForecast(response),
-      providerData: this.mapProviderData(response)
+      providerData: this.mapProviderData(response),
+      planRecommendation: this.mapPlanRecommendation(response)
     };
   }
 
@@ -307,6 +326,32 @@ export class WeatherService {
     }));
   }
 
+  private mapPlanRecommendation(response: BackendWeatherForecastResponse): PlanRecommendation {
+    if (!response.planRecommendation) {
+      return {
+        category: this.getRecommendationCategory(response),
+        confidence: 50,
+        summary: response.currentRecommendation,
+        recommendedPlanTypes: [
+          'plan flexible',
+          'actividad urbana',
+          'alternativa cubierta'
+        ],
+        reasons: [
+          'Recomendación generada mediante reglas internas del sistema.'
+        ]
+      };
+    }
+
+    return {
+      category: response.planRecommendation.category,
+      confidence: response.planRecommendation.confidence,
+      summary: response.planRecommendation.summary,
+      recommendedPlanTypes: response.planRecommendation.recommendedPlanTypes || [],
+      reasons: response.planRecommendation.reasons || []
+    };
+  }
+
   private buildDescription(response: BackendWeatherForecastResponse): string {
     return `Temperatura actual de ${Math.round(response.currentTemperature)}°C, humedad del ${response.currentHumidity}% y viento de ${Math.round(response.currentWindSpeed)} km/h.`;
   }
@@ -314,10 +359,19 @@ export class WeatherService {
   private getRecommendationCategory(response: BackendWeatherForecastResponse): string {
     const lluvia = response.currentPrecipitationProbability;
     const temperatura = response.currentTemperature;
+    const viento = response.currentWindSpeed;
     const estado = response.currentWeatherStatus?.toLowerCase() || '';
 
-    if (lluvia >= 60 || estado.includes('lluvia') || estado.includes('tormenta')) {
+    if (estado.includes('tormenta')) {
+      return 'Precaución';
+    }
+
+    if (lluvia >= 60 || estado.includes('lluvia') || estado.includes('llovizna')) {
       return 'Interior';
+    }
+
+    if (viento >= 30) {
+      return 'Mixta';
     }
 
     if (temperatura >= 30) {

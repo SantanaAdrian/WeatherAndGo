@@ -33,7 +33,6 @@ export class ListComponent implements OnInit {
         }
 
         this.selectedWeather = result;
-
       },
       error: () => {
         this.router.navigate(['error']);
