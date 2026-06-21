@@ -1,13 +1,108 @@
-<div class="d-flex flex-wrap justify-content-between">
+<section class="forecast-page" *ngIf="selectedWeather as weather">
 
-  <div class="card mb-5 puntero-link" style="width: 10rem;" *ngFor="let pokemon of listaPokemons" [routerLink]="['/detail', pokemon.id]">
-    <img src="{{pokemon.urlImagen}}" class="card-img-top" alt="{{pokemon.name}}">
-    <div class="card-body">
-      <div class="d-flex justify-content-around">
-        <h5 class="card-title">{{pokemon.id}}</h5>
-        <h5 class="card-title">{{pokemon.name}}</h5>
+  <div class="forecast-header">
+    <div>
+      <h2>Predicción meteorológica</h2>
+      <p>{{ weather.ciudad }}</p>
+    </div>
+
+    <div class="forecast-location">
+      <span>Latitud: {{ weather.latitud | number:'1.4-4' }}</span>
+      <span>Longitud: {{ weather.longitud | number:'1.4-4' }}</span>
+    </div>
+  </div>
+
+  <div class="current-weather-card">
+    <div class="current-main">
+      <h3>{{ weather.temperatura }}°C</h3>
+      <p>{{ weather.estadoCielo }}</p>
+    </div>
+
+    <div class="current-details">
+      <div>
+        <span>Humedad</span>
+        <strong>{{ weather.humedad }}%</strong>
+      </div>
+
+      <div>
+        <span>Viento</span>
+        <strong>{{ weather.viento }} km/h</strong>
+      </div>
+
+      <div>
+        <span>Lluvia</span>
+        <strong>{{ weather.probabilidadLluvia }}%</strong>
+      </div>
+
+      <div>
+        <span>Categoría</span>
+        <strong>{{ weather.categoriaRecomendada }}</strong>
+      </div>
+    </div>
+
+    <p class="current-description">
+      {{ weather.descripcion }}
+    </p>
+
+    <p class="current-recommendation">
+      {{ weather.recomendacion }}
+    </p>
+  </div>
+
+  <div class="hourly-section" *ngIf="weather.hourlyForecast.length > 0">
+    <div class="section-title">
+      <h3>Predicción por horas</h3>
+      <p>Evolución meteorológica estimada durante el día.</p>
+    </div>
+
+    <div class="hourly-grid">
+      <div class="hour-card" *ngFor="let hour of weather.hourlyForecast">
+        <h4>{{ hour.hora }}</h4>
+        <strong>{{ hour.temperatura }}°C</strong>
+        <span>{{ hour.estadoCielo }}</span>
+        <small>Lluvia: {{ hour.probabilidadLluvia }}%</small>
+        <small>Viento: {{ hour.viento }} km/h</small>
       </div>
     </div>
   </div>
 
-</div>
+  <div class="daily-section" *ngIf="weather.forecast.length > 0">
+    <div class="section-title">
+      <h3>Predicción por días</h3>
+      <p>Resumen meteorológico para los próximos días.</p>
+    </div>
+
+    <div class="daily-grid">
+      <div class="daily-card" *ngFor="let day of weather.forecast">
+        <div class="daily-date">
+          <h4>{{ getDayName(day.fecha) }}</h4>
+          <span>{{ getShortDate(day.fecha) }}</span>
+        </div>
+
+        <div class="daily-temperature">
+          <strong>{{ day.temperaturaMaxima }}°C</strong>
+          <span>{{ day.temperaturaMinima }}°C</span>
+        </div>
+
+        <p>{{ day.estadoCielo }}</p>
+
+        <div class="daily-data">
+          <span>Lluvia: {{ day.probabilidadLluvia }}%</span>
+          <span>Viento: {{ day.viento }} km/h</span>
+          <span>Humedad: {{ day.humedad }}%</span>
+        </div>
+
+        <p class="daily-recommendation">
+          {{ day.recomendacion }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="back-section">
+    <a class="btn btn-outline-info" routerLink="/list-table">
+      Ver comparativa de proveedores
+    </a>
+  </div>
+
+</section>

@@ -1,0 +1,165 @@
+<section class="recommendations-page">
+
+  <div class="recommendations-header">
+    <h2>Recomendaciones inteligentes</h2>
+    <p>
+      Motor propio de recomendación basado en datos meteorológicos agregados y fiabilidad multiproveedor.
+    </p>
+  </div>
+
+  <div class="recommendations-controls">
+    <div class="city-selector">
+      <label for="citySelect">Ubicación</label>
+
+      <select
+        id="citySelect"
+        class="form-select"
+        [(ngModel)]="selectedCityId"
+        (change)="onCityChange()"
+      >
+        <option *ngFor="let city of cityOptions" [value]="city.id">
+          {{ city.name }}
+        </option>
+      </select>
+    </div>
+
+    <a
+      class="btn btn-outline-info"
+      [routerLink]="['/list', selectedCityId]"
+    >
+      Ver predicción meteorológica
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="info-message">
+    Cargando recomendación inteligente...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="selectedWeather && !loading" class="recommendation-layout">
+
+    <div class="weather-context-card">
+      <h3>{{ selectedWeather.ciudad }}</h3>
+
+      <div class="weather-context-grid">
+        <div>
+          <span>Temperatura</span>
+          <strong>{{ selectedWeather.temperatura }}°C</strong>
+        </div>
+
+        <div>
+          <span>Humedad</span>
+          <strong>{{ selectedWeather.humedad }}%</strong>
+        </div>
+
+        <div>
+          <span>Viento</span>
+          <strong>{{ selectedWeather.viento }} km/h</strong>
+        </div>
+
+        <div>
+          <span>Lluvia</span>
+          <strong>{{ selectedWeather.probabilidadLluvia }}%</strong>
+        </div>
+
+        <div>
+          <span>Estado</span>
+          <strong>{{ selectedWeather.estadoCielo }}</strong>
+        </div>
+
+        <div>
+          <span>Categoría base</span>
+          <strong>{{ selectedWeather.categoriaRecomendada }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-recommendation-card" *ngIf="selectedWeather.planRecommendation">
+      <div class="ai-main-info">
+        <span class="category-badge">
+          {{ selectedWeather.planRecommendation.category }}
+        </span>
+
+        <span class="confidence-badge">
+          Confianza: {{ selectedWeather.planRecommendation.confidence }}%
+        </span>
+      </div>
+
+      <h3>Plan recomendado</h3>
+
+      <p class="ai-summary">
+        {{ selectedWeather.planRecommendation.summary }}
+      </p>
+
+      <div class="ai-columns">
+        <div>
+          <h4>Tipos de plan recomendados</h4>
+
+          <ul>
+            <li *ngFor="let plan of selectedWeather.planRecommendation.recommendedPlanTypes">
+              {{ plan }}
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4>Motivos de la recomendación</h4>
+
+          <ul>
+            <li *ngFor="let reason of selectedWeather.planRecommendation.reasons">
+              {{ reason }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div
+        class="personalized-plans-section"
+        *ngIf="selectedWeather.planRecommendation.personalizedPlans.length > 0"
+      >
+        <h4>Planes personalizados en la zona</h4>
+
+        <div class="personalized-plans-grid">
+          <div
+            class="personalized-plan-card"
+            *ngFor="let plan of selectedWeather.planRecommendation.personalizedPlans"
+          >
+            <div class="personalized-plan-header">
+              <h5>{{ plan.title }}</h5>
+              <span>{{ plan.category }}</span>
+            </div>
+
+            <p class="personalized-plan-description">
+              {{ plan.description }}
+            </p>
+
+            <div class="personalized-place" *ngIf="plan.placeName || plan.address">
+              <strong *ngIf="plan.placeName">
+                {{ plan.placeName }}
+              </strong>
+
+              <small *ngIf="plan.address">
+                {{ plan.address }}
+              </small>
+            </div>
+
+            <a
+              *ngIf="plan.externalUrl"
+              class="personalized-plan-link"
+              [href]="plan.externalUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Buscar información
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</section>

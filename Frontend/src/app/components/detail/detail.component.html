@@ -1,12 +1,68 @@
-<h3>{{miPokemon.name}}</h3>
+<div class="container mt-4" *ngIf="weatherData">
 
-<div>
-  <img src="{{miPokemon.sprites.other.dream_world.front_default}}" alt="">
+  <div class="row mb-4">
+    <div class="col-12">
+      <button class="btn btn-outline-secondary mb-3" routerLink="/list">
+        Volver
+      </button>
+
+      <h2>{{ weatherData.ciudad }}</h2>
+      <p class="text-muted mb-0">
+        Predicción meteorológica para el día {{ weatherData.fecha }}
+      </p>
+    </div>
+  </div>
+
+  <div class="row">
+
+    <div class="col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+
+          <h4 class="card-title mb-3">Estado actual</h4>
+
+          <h1 class="display-4 mb-2">
+            {{ weatherData.temperatura }}°C
+          </h1>
+
+          <h5 class="text-muted mb-4">
+            {{ weatherData.estadoCielo }}
+          </h5>
+
+          <p>
+            {{ weatherData.descripcion }}
+          </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+
+          <h4 class="card-title mb-3">Datos meteorológicos</h4>
+
+          <p><strong>Humedad:</strong> {{ weatherData.humedad }}%</p>
+          <p><strong>Viento:</strong> {{ weatherData.viento }} km/h</p>
+          <p><strong>Probabilidad de lluvia:</strong> {{ weatherData.probabilidadLluvia }}%</p>
+          <p><strong>Categoría recomendada:</strong> {{ weatherData.categoriaRecomendada }}</p>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="alert alert-info">
+        <h4 class="alert-heading">Recomendación de MeteoWeb</h4>
+        <p class="mb-0">
+          {{ weatherData.recomendacion }}
+        </p>
+      </div>
+    </div>
+  </div>
+
 </div>
-
-<h5>Peso: {{miPokemon.weight/10}} Kg</h5>
-
-<h5>Juegos en los que interviene</h5>
-<ul>
-  <li *ngFor="let juego of miPokemon.game_indices">{{juego.version.name}}</li>
-</ul>

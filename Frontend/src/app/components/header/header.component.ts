@@ -7,7 +7,4 @@ import { Component } from '@angular/core';
 })
 export class HeaderComponent {
 
-  fotoCabecera:string="assets/img/pokesite.jpg";
-  contenidoAlt:string="Pokemon World";
-
 }

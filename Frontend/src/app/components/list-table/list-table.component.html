@@ -1,1 +1,98 @@
-<p>list-table works!</p>
+<section class="comparison-page">
+
+  <div class="comparison-header">
+    <h2>Comparativa meteorológica</h2>
+    <p>
+      Comparación entre proveedores externos y dato agregado calculado por Weather&amp;Go.
+    </p>
+  </div>
+
+  <div class="comparison-controls">
+    <div class="city-selector">
+      <label for="citySelect">Ubicación</label>
+
+      <select
+        id="citySelect"
+        class="form-select"
+        [(ngModel)]="selectedCityId"
+        (change)="loadComparison(selectedCityId)"
+      >
+        <option *ngFor="let city of cityOptions" [value]="city.id">
+          {{ city.name }}
+        </option>
+      </select>
+    </div>
+
+    <a
+      class="btn btn-outline-info"
+      [routerLink]="['/list', selectedCityId]"
+    >
+      Ver predicción completa
+    </a>
+  </div>
+
+  <div *ngIf="loading" class="info-message">
+    Cargando comparativa meteorológica...
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="selectedWeather && !loading" class="summary-card">
+    <div>
+      <span>Ubicación</span>
+      <strong>{{ selectedWeather.ciudad }}</strong>
+    </div>
+
+    <div>
+      <span>Coordenadas</span>
+      <strong>
+        {{ selectedWeather.latitud | number:'1.4-4' }},
+        {{ selectedWeather.longitud | number:'1.4-4' }}
+      </strong>
+    </div>
+
+    <div>
+      <span>Fecha</span>
+      <strong>{{ selectedWeather.fecha }}</strong>
+    </div>
+  </div>
+
+  <div class="table-container" *ngIf="comparisonRows.length > 0 && !loading">
+    <table>
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Temperatura</th>
+          <th>Humedad</th>
+          <th>Viento</th>
+          <th>Lluvia</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          *ngFor="let row of comparisonRows"
+          [class.aggregated-row]="row.isAggregated"
+        >
+          <td>
+            <strong>{{ row.provider }}</strong>
+          </td>
+
+          <td>{{ row.temperature | number:'1.1-1' }}°C</td>
+
+          <td>{{ row.humidity }}%</td>
+
+          <td>{{ row.windSpeed | number:'1.1-1' }} km/h</td>
+
+          <td>{{ row.precipitationProbability }}%</td>
+
+          <td>{{ row.weatherStatus }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</section>

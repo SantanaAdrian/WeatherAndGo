@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import {HttpClientModule} from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -12,6 +13,7 @@ import { HomeComponent } from './components/home/home.component';
 import { ListTableComponent } from './components/list-table/list-table.component';
 import { ErrorComponent } from './components/error/error.component';
 import { DetailComponent } from './components/detail/detail.component';
+import { RecommendationsComponent } from './components/recommendations/recommendations.component';
 
 @NgModule({
   declarations: [
@@ -23,12 +25,14 @@ import { DetailComponent } from './components/detail/detail.component';
     HomeComponent,
     ListTableComponent,
     ErrorComponent,
-    DetailComponent
+    DetailComponent,
+    RecommendationsComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    HttpClientModule
+    HttpClientModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

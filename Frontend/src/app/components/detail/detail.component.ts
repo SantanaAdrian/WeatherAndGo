@@ -1,47 +1,50 @@
-import { Observable } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PokemonService } from 'src/app/services/weather.service';
+import { WeatherData, WeatherService } from 'src/app/services/weather.service';
 
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.component.html',
   styleUrls: ['./detail.component.css']
 })
-export class DetailComponent implements OnInit{
+export class DetailComponent implements OnInit {
 
-  id!:string;
-  miPokemon:any={};
+  weatherData?: WeatherData;
 
-  constructor(private _route:ActivatedRoute, private _router:Router, private _PokemonService:PokemonService){}
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private weatherService: WeatherService
+  ) { }
 
   ngOnInit(): void {
-    this.getDatos();
+    const id = this.route.snapshot.paramMap.get('id');
+
+    if (!id) {
+      this.router.navigate(['error']);
+      return;
+    }
+
+    this.getWeatherData(id);
   }
 
-  getDatos():void{
+  getWeatherData(id: string): void {
+    this.weatherService.getWeatherById(id).subscribe({
+      next: (result: WeatherData | undefined) => {
+        if (!result) {
+          this.router.navigate(['error']);
+          return;
+        }
 
-    //Cuando cambiamos de url el componente se recarga
-    this._route.params.subscribe({
-      next:(params) => {
-        this.id = params['id'];
-        //console.log(this.id);
+        this.weatherData = result;
       },
-      error:(error) => {this._router.navigate(['error'])},
-      complete:() => {console.log("El Observer ha recibido los parametros")}
+      error: () => {
+        this.router.navigate(['error']);
+      },
+      complete: () => {
+        console.log('Detalle meteorológico cargado correctamente');
+      }
     });
-
-    this._PokemonService.getPokemon(this.id).subscribe({
-      next:(result) => {
-        console.log(result);
-        this.miPokemon = result;
-        //this.miPokemon.species.url ==> evolution chain;
-
-           },
-      error:(error) => {this._router.navigate(['error'])},
-      complete:() => {console.log("El Observer ha recibido los parametros")}
-    });
-
   }
 
 }
