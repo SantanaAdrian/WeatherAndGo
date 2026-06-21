@@ -1,7 +1,11 @@
 from app.models import WeatherPlanRecommendationRequest, WeatherPlanRecommendationResponse
+from app.ai_plan_service import AiPlanService
 
 
 class RecommendationService:
+
+    def __init__(self):
+        self.ai_plan_service = AiPlanService()
 
     def generate_recommendation(
         self,
@@ -116,12 +120,32 @@ class RecommendationService:
             wind
         )
 
+        summary = self._build_summary(
+            category,
+            request.locationName,
+            temperature,
+            rain,
+            wind,
+            reliability
+        )
+
+        weather_summary = self._build_weather_summary(request)
+
+        plans = self.ai_plan_service.get_ai_plans(
+            location_name=request.locationName,
+            category=category,
+            weather_summary=weather_summary,
+            latitude=getattr(request, "latitude", None),
+            longitude=getattr(request, "longitude", None)
+        )
+
         return WeatherPlanRecommendationResponse(
             category=category,
             confidence=confidence,
-            summary=self._build_summary(category, request.locationName, temperature, rain, wind, reliability),
+            summary=summary,
             recommendedPlanTypes=self._get_plan_types(category),
-            reasons=reasons
+            reasons=reasons,
+            plans=plans
         )
 
     def _select_category(
@@ -203,6 +227,20 @@ class RecommendationService:
             f"La temperatura es agradable y la lluvia es baja, pero el viento y la fiabilidad {reliability.lower()} aconsejan flexibilidad."
         )
 
+    def _build_weather_summary(
+        self,
+        request: WeatherPlanRecommendationRequest
+    ) -> str:
+        return (
+            f"Ubicación: {request.locationName}. "
+            f"Temperatura actual: {request.currentTemperature:.1f}°C. "
+            f"Humedad actual: {request.currentHumidity}%. "
+            f"Viento actual: {request.currentWindSpeed:.1f} km/h. "
+            f"Probabilidad de precipitación: {request.currentPrecipitationProbability}%. "
+            f"Estado meteorológico: {request.currentWeatherStatus}. "
+            f"Fiabilidad agregada: {request.aggregationSummary.reliabilityLevel}."
+        )
+
     def _get_plan_types(
         self,
         category: str
@@ -213,7 +251,10 @@ class RecommendationService:
                 "museo",
                 "cafetería",
                 "centro comercial",
-                "actividad cultural cubierta"
+                "actividad cultural cubierta",
+                "eventos cercanos",
+                "bares",
+                "restaurantes"
             ]
 
         if category == "EXTERIOR":
@@ -222,6 +263,8 @@ class RecommendationService:
                 "ruta suave",
                 "parque",
                 "mirador",
+                "sitios de interés",
+                "terraza",
                 "actividad deportiva ligera"
             ]
 
@@ -229,6 +272,9 @@ class RecommendationService:
             return [
                 "plan de interior",
                 "actividad cercana",
+                "eventos cubiertos",
+                "cine",
+                "cafetería",
                 "evitar zonas expuestas",
                 "revisar la previsión antes de salir"
             ]
@@ -238,6 +284,9 @@ class RecommendationService:
             "cafetería",
             "plan urbano",
             "actividad cubierta alternativa",
+            "eventos cercanos",
+            "bares",
+            "restaurantes",
             "ruta sencilla si el viento baja"
         ]
 
@@ -252,7 +301,14 @@ class RecommendationService:
             "lluvia" in status
             or "llovizna" in status
             or "chubasco" in status
+            or "rain" in status
+            or "drizzle" in status
+            or "shower" in status
         )
 
     def _contains_storm(self, status: str) -> bool:
-        return "tormenta" in status
+        return (
+            "tormenta" in status
+            or "storm" in status
+            or "thunder" in status
+        )

@@ -1,38 +1,54 @@
-.pie-pagina{
-  padding:20px 0;
+.weathergo-footer {
+  margin-top: 2.5rem;
+  padding: 1.4rem 4rem;
+  background-color: #151716;
+  border-top: 1px solid #6f665a;
+  color: #f5f5f5;
 }
 
-.facebook-icono{
-  font-size: 24px;
-  color:cornflowerblue;
-}
-.instagram-icono{
-  font-size: 24px;
-  color:blueviolet;
-}
-
-.twitter-icono{
-  font-size: 24px;
-  color:darkturquoise;
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
-.youtube-icono{
-  font-size: 24px;
-  color:red;
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.youtube-icono :hover{
-  opacity: 0.5;
+.footer-brand strong {
+  font-size: 1.1rem;
+  color: #f5f5f5;
 }
 
-.instagram-icono :hover{
-  opacity: 0.5;
+.footer-brand span {
+  color: #c9beb0;
+  font-size: 0.9rem;
 }
 
-.facebook-icono :hover{
-  opacity: 0.5;
+.footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: right;
+  color: #c9beb0;
+  font-size: 0.85rem;
 }
 
-.twitter-icono :hover{
-  opacity: 0.5;
+@media (max-width: 768px) {
+  .weathergo-footer {
+    padding: 1.2rem;
+  }
+
+  .footer-content {
+    align-items: flex-start;
+  }
+
+  .footer-info {
+    text-align: left;
+  }
 }

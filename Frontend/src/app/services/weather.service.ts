@@ -31,12 +31,22 @@ export interface WeatherProviderData {
   weatherStatus: string;
 }
 
+export interface PersonalizedPlan {
+  title: string;
+  category: string;
+  description: string;
+  placeName?: string;
+  address?: string;
+  externalUrl?: string;
+}
+
 export interface PlanRecommendation {
   category: string;
   confidence: number;
   summary: string;
   recommendedPlanTypes: string[];
   reasons: string[];
+  personalizedPlans: PersonalizedPlan[];
 }
 
 export interface WeatherData {
@@ -106,12 +116,22 @@ interface BackendWeatherProviderData {
   weatherStatus: string;
 }
 
+interface BackendPersonalizedPlan {
+  title: string;
+  category: string;
+  description: string;
+  placeName?: string;
+  address?: string;
+  externalUrl?: string;
+}
+
 interface BackendPlanRecommendation {
   category: string;
   confidence: number;
   summary: string;
   recommendedPlanTypes: string[];
   reasons: string[];
+  personalizedPlans?: BackendPersonalizedPlan[];
 }
 
 interface BackendWeatherForecastResponse {
@@ -339,6 +359,32 @@ export class WeatherService {
         ],
         reasons: [
           'Recomendación generada mediante reglas internas del sistema.'
+        ],
+        personalizedPlans: [
+          {
+            title: 'Paseo urbano flexible',
+            category: 'MIXTO',
+            description: 'Plan adaptable a condiciones meteorológicas favorables, manteniendo una alternativa cubierta cercana.',
+            placeName: 'Ruta urbana cercana',
+            address: response.locationName || 'Zona consultada',
+            externalUrl: this.buildGoogleSearchUrl(`Ruta urbana ${response.locationName || ''}`)
+          },
+          {
+            title: 'Cafetería o actividad interior cercana',
+            category: 'INTERIOR',
+            description: 'Alternativa recomendada si cambia la previsión o aumenta la incertidumbre meteorológica.',
+            placeName: 'Cafetería o bar cercano',
+            address: response.locationName || 'Zona consultada',
+            externalUrl: this.buildGoogleSearchUrl(`cafetería bar ${response.locationName || ''}`)
+          },
+          {
+            title: 'Cartelera o cine cercano',
+            category: 'INTERIOR',
+            description: 'Plan de respaldo si el tiempo empeora o no conviene realizar actividad exterior.',
+            placeName: 'Cine cercano',
+            address: response.locationName || 'Zona consultada',
+            externalUrl: this.buildGoogleSearchUrl(`cine cartelera ${response.locationName || ''}`)
+          }
         ]
       };
     }
@@ -348,7 +394,15 @@ export class WeatherService {
       confidence: response.planRecommendation.confidence,
       summary: response.planRecommendation.summary,
       recommendedPlanTypes: response.planRecommendation.recommendedPlanTypes || [],
-      reasons: response.planRecommendation.reasons || []
+      reasons: response.planRecommendation.reasons || [],
+      personalizedPlans: (response.planRecommendation.personalizedPlans || []).map(plan => ({
+        title: plan.title,
+        category: plan.category,
+        description: plan.description,
+        placeName: plan.placeName,
+        address: plan.address,
+        externalUrl: plan.externalUrl
+      }))
     };
   }
 
@@ -391,5 +445,9 @@ export class WeatherService {
     }
 
     return time.split('T')[1];
+  }
+
+  private buildGoogleSearchUrl(query: string): string {
+    return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
   }
 }

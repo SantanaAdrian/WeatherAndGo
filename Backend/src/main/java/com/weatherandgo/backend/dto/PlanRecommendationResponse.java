@@ -1,6 +1,5 @@
 package com.weatherandgo.backend.dto;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class PlanRecommendationResponse {
@@ -10,10 +9,9 @@ public class PlanRecommendationResponse {
     private String summary;
     private List<String> recommendedPlanTypes;
     private List<String> reasons;
+    private List<PersonalizedPlanResponse> personalizedPlans;
 
     public PlanRecommendationResponse() {
-        this.recommendedPlanTypes = new ArrayList<>();
-        this.reasons = new ArrayList<>();
     }
 
     public PlanRecommendationResponse(
@@ -28,6 +26,22 @@ public class PlanRecommendationResponse {
         this.summary = summary;
         this.recommendedPlanTypes = recommendedPlanTypes;
         this.reasons = reasons;
+    }
+
+    public PlanRecommendationResponse(
+            String category,
+            Integer confidence,
+            String summary,
+            List<String> recommendedPlanTypes,
+            List<String> reasons,
+            List<PersonalizedPlanResponse> personalizedPlans
+    ) {
+        this.category = category;
+        this.confidence = confidence;
+        this.summary = summary;
+        this.recommendedPlanTypes = recommendedPlanTypes;
+        this.reasons = reasons;
+        this.personalizedPlans = personalizedPlans;
     }
 
     public String getCategory() {
@@ -68,5 +82,13 @@ public class PlanRecommendationResponse {
 
     public void setReasons(List<String> reasons) {
         this.reasons = reasons;
+    }
+
+    public List<PersonalizedPlanResponse> getPersonalizedPlans() {
+        return personalizedPlans;
+    }
+
+    public void setPersonalizedPlans(List<PersonalizedPlanResponse> personalizedPlans) {
+        this.personalizedPlans = personalizedPlans;
     }
 }

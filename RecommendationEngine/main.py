@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.models import WeatherPlanRecommendationRequest, WeatherPlanRecommendationResponse
+from app.places_service import PlacesService
 from app.recommendation_service import RecommendationService
 
 app = FastAPI(
@@ -9,6 +10,7 @@ app = FastAPI(
 )
 
 recommendation_service = RecommendationService()
+places_service = PlacesService()
 
 
 @app.get("/health")
@@ -24,3 +26,26 @@ def generate_weather_plan_recommendation(
     request: WeatherPlanRecommendationRequest
 ) -> WeatherPlanRecommendationResponse:
     return recommendation_service.generate_recommendation(request)
+
+
+@app.get("/places/test")
+def test_places(
+    category: str,
+    latitude: float,
+    longitude: float,
+    locationName: str = "Ubicación seleccionada"
+) -> dict:
+    places = places_service.find_places_for_category(
+        category=category,
+        latitude=latitude,
+        longitude=longitude,
+        location_name=locationName
+    )
+
+    return {
+        "category": category,
+        "latitude": latitude,
+        "longitude": longitude,
+        "locationName": locationName,
+        "places": places
+    }

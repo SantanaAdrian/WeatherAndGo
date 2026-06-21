@@ -115,6 +115,49 @@
           </ul>
         </div>
       </div>
+
+      <div
+        class="personalized-plans-section"
+        *ngIf="selectedWeather.planRecommendation.personalizedPlans.length > 0"
+      >
+        <h4>Planes personalizados en la zona</h4>
+
+        <div class="personalized-plans-grid">
+          <div
+            class="personalized-plan-card"
+            *ngFor="let plan of selectedWeather.planRecommendation.personalizedPlans"
+          >
+            <div class="personalized-plan-header">
+              <h5>{{ plan.title }}</h5>
+              <span>{{ plan.category }}</span>
+            </div>
+
+            <p class="personalized-plan-description">
+              {{ plan.description }}
+            </p>
+
+            <div class="personalized-place" *ngIf="plan.placeName || plan.address">
+              <strong *ngIf="plan.placeName">
+                {{ plan.placeName }}
+              </strong>
+
+              <small *ngIf="plan.address">
+                {{ plan.address }}
+              </small>
+            </div>
+
+            <a
+              *ngIf="plan.externalUrl"
+              class="personalized-plan-link"
+              [href]="plan.externalUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Buscar información
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
