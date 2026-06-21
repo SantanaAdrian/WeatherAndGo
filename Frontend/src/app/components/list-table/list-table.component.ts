@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { WeatherData, WeatherProviderData, WeatherService } from 'src/app/services/weather.service';
 
 interface CityOption {
@@ -23,7 +23,6 @@ interface ProviderComparisonRow {
   styleUrls: ['./list-table.component.css']
 })
 export class ListTableComponent implements OnInit {
-
   selectedCityId: string = 'ubicacion-actual';
   selectedWeather?: WeatherData;
   comparisonRows: ProviderComparisonRow[] = [];
@@ -31,25 +30,33 @@ export class ListTableComponent implements OnInit {
   errorMessage: string = '';
 
   cityOptions: CityOption[] = [
-  { id: 'ubicacion-actual', name: 'Ubicación actual' },
-  { id: 'bilbao', name: 'Bilbao' },
-  { id: 'madrid', name: 'Madrid' },
-  { id: 'barcelona', name: 'Barcelona' },
-  { id: 'valencia', name: 'Valencia' },
-  { id: 'sevilla', name: 'Sevilla' },
-  { id: 'santander', name: 'Santander' }
+    { id: 'ubicacion-actual', name: 'Ubicación actual' },
+    { id: 'bilbao', name: 'Bilbao' },
+    { id: 'madrid', name: 'Madrid' },
+    { id: 'barcelona', name: 'Barcelona' },
+    { id: 'valencia', name: 'Valencia' },
+    { id: 'sevilla', name: 'Sevilla' },
+    { id: 'santander', name: 'Santander' }
   ];
 
-  constructor(private weatherService: WeatherService,  private route: ActivatedRoute) { }
+  constructor(
+    private weatherService: WeatherService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    this.loadComparison(this.selectedCityId);
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id') || this.weatherService.getActiveLocationId();
+      this.loadComparison(id);
+    });
   }
 
   loadComparison(cityId: string): void {
     this.selectedCityId = cityId;
     this.loading = true;
     this.errorMessage = '';
+    this.weatherService.setActiveLocationId(cityId);
 
     this.weatherService.getForecastById(cityId).subscribe({
       next: (result: WeatherData | undefined) => {
@@ -62,6 +69,7 @@ export class ListTableComponent implements OnInit {
         }
 
         this.selectedWeather = result;
+        this.ensureCityOption(result);
         this.comparisonRows = this.buildComparisonRows(result);
         this.loading = false;
       },
@@ -72,6 +80,21 @@ export class ListTableComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  onCityChange(): void {
+    this.router.navigate(['/list-table', this.selectedCityId]);
+  }
+
+  private ensureCityOption(weather: WeatherData): void {
+    const exists = this.cityOptions.some(option => option.id === weather.id);
+
+    if (!exists) {
+      this.cityOptions = [
+        { id: weather.id, name: weather.ciudad },
+        ...this.cityOptions
+      ];
+    }
   }
 
   private buildComparisonRows(weather: WeatherData): ProviderComparisonRow[] {
@@ -87,7 +110,7 @@ export class ListTableComponent implements OnInit {
       isAggregated: true
     });
 
-    weather.providerData.forEach((provider: WeatherProviderData) => {
+    (weather.providerData || []).forEach((provider: WeatherProviderData) => {
       rows.push({
         provider: provider.provider,
         temperature: provider.temperature,

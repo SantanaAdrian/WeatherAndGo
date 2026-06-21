@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { WeatherData, WeatherService } from 'src/app/services/weather.service';
 
 interface RecommendedPlan {
@@ -13,72 +14,60 @@ interface RecommendedPlan {
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent implements OnInit {
-
   weather?: WeatherData;
   recommendedPlans: RecommendedPlan[] = [];
-
   loading: boolean = false;
   locationError: string = '';
 
-  constructor(private weatherService: WeatherService) { }
+  constructor(
+    private weatherService: WeatherService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    this.getDeviceLocation();
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id') || this.weatherService.getActiveLocationId();
+      this.loadWeather(id);
+    });
   }
 
   getDeviceLocation(): void {
-    this.loading = true;
-    this.locationError = '';
+    this.weatherService.setActiveLocationId('ubicacion-actual');
 
-    if (!navigator.geolocation) {
-      this.locationError = 'El navegador no permite obtener la ubicación. Se muestran datos de Bilbao.';
-      this.loadDefaultWeather();
+    const currentId = this.route.snapshot.paramMap.get('id');
+
+    if (currentId === 'ubicacion-actual') {
+      this.loadWeather('ubicacion-actual');
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position: GeolocationPosition) => {
-        const latitud = position.coords.latitude;
-        const longitud = position.coords.longitude;
-
-        this.weatherService.getWeatherByCoordinates(
-          latitud,
-          longitud,
-          'ubicacion-actual',
-          'Tu ubicación actual'
-        ).subscribe({
-          next: (result: WeatherData) => {
-            this.weather = result;
-            this.generatePlans();
-            this.loading = false;
-          },
-          error: () => {
-            this.locationError = 'No se ha podido obtener la predicción de tu ubicación. Se muestran datos de Bilbao.';
-            this.loadDefaultWeather();
-          }
-        });
-      },
-      () => {
-        this.locationError = 'No se ha podido obtener la ubicación. Se muestran datos de Bilbao.';
-        this.loadDefaultWeather();
-      }
-    );
+    this.router.navigate(['/home', 'ubicacion-actual']);
   }
 
-  loadDefaultWeather(): void {
-    this.weatherService.getWeatherByCoordinates(
-      43.263,
-      -2.935,
-      'bilbao',
-      'Bilbao'
-    ).subscribe({
-      next: (result: WeatherData) => {
+  loadWeather(id: string): void {
+    this.loading = true;
+    this.locationError = '';
+    this.weatherService.setActiveLocationId(id);
+
+    this.weatherService.getForecastById(id).subscribe({
+      next: (result: WeatherData | undefined) => {
+        if (!result) {
+          this.locationError = 'No se han podido cargar los datos meteorológicos.';
+          this.weather = undefined;
+          this.recommendedPlans = [];
+          this.loading = false;
+          return;
+        }
+
         this.weather = result;
         this.generatePlans();
         this.loading = false;
       },
       error: () => {
         this.locationError = 'No se han podido cargar los datos meteorológicos.';
+        this.weather = undefined;
+        this.recommendedPlans = [];
         this.loading = false;
       }
     });
@@ -86,6 +75,16 @@ export class HomeComponent implements OnInit {
 
   generatePlans(): void {
     if (!this.weather) {
+      return;
+    }
+
+    if (this.weather.planRecommendation?.personalizedPlans?.length > 0) {
+      this.recommendedPlans = this.weather.planRecommendation.personalizedPlans.slice(0, 3).map(plan => ({
+        titulo: plan.title,
+        categoria: plan.category,
+        descripcion: plan.description
+      }));
+
       return;
     }
 
@@ -97,9 +96,9 @@ export class HomeComponent implements OnInit {
           descripcion: 'Plan recomendado para evitar la lluvia y aprovechar el día en un espacio cubierto.'
         },
         {
-          titulo: 'Entrenamiento en gimnasio',
-          categoria: 'Deporte',
-          descripcion: 'Alternativa adecuada si las condiciones no permiten realizar deporte al aire libre.'
+          titulo: 'Escape room o juego de interior',
+          categoria: 'Ocio',
+          descripcion: 'Alternativa cubierta para hacer algo diferente sin depender del tiempo.'
         },
         {
           titulo: 'Cine o actividad interior',
@@ -136,9 +135,9 @@ export class HomeComponent implements OnInit {
     if (this.weather.temperatura >= 30) {
       this.recommendedPlans = [
         {
-          titulo: 'Paseo en zona sombreada',
+          titulo: 'Playa, zona de baño o paseo junto al agua',
           categoria: 'Exterior',
-          descripcion: 'Actividad ligera recomendada evitando las horas centrales del día.'
+          descripcion: 'Buen plan de verano si no hay lluvia ni viento fuerte.'
         },
         {
           titulo: 'Plan en terraza o zona fresca',
@@ -173,5 +172,4 @@ export class HomeComponent implements OnInit {
       }
     ];
   }
-
 }

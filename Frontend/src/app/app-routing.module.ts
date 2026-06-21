@@ -8,18 +8,24 @@ import { DetailComponent } from './components/detail/detail.component';
 import { RecommendationsComponent } from './components/recommendations/recommendations.component';
 
 const routes: Routes = [
+  { path: '', redirectTo: 'home/ubicacion-actual', pathMatch: 'full' },
 
-  {path:"", component:HomeComponent},
-  {path:"home", component:HomeComponent},
-  {path: 'list', component: ListComponent },
-  {path: 'list/:id', component: ListComponent },
-  {path:"detail/:id", component:DetailComponent},
-  {path:"list-table", component:ListTableComponent},
-  {path:"list-table/:id", component:ListTableComponent},
-  {path:"error", component:ErrorComponent},
-  {path: 'recommendations', redirectTo: 'recommendations/ubicacion-actual', pathMatch: 'full' },
-  {path: 'recommendations/:id', component: RecommendationsComponent },
-  {path:"**", component:ErrorComponent}
+  { path: 'home', redirectTo: 'home/ubicacion-actual', pathMatch: 'full' },
+  { path: 'home/:id', component: HomeComponent },
+
+  { path: 'list', redirectTo: 'list/ubicacion-actual', pathMatch: 'full' },
+  { path: 'list/:id', component: ListComponent },
+
+  { path: 'detail/:id', component: DetailComponent },
+
+  { path: 'list-table', redirectTo: 'list-table/ubicacion-actual', pathMatch: 'full' },
+  { path: 'list-table/:id', component: ListTableComponent },
+
+  { path: 'recommendations', redirectTo: 'recommendations/ubicacion-actual', pathMatch: 'full' },
+  { path: 'recommendations/:id', component: RecommendationsComponent },
+
+  { path: 'error', component: ErrorComponent },
+  { path: '**', component: ErrorComponent }
 ];
 
 @NgModule({

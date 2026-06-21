@@ -13,20 +13,19 @@ interface CityOption {
   styleUrls: ['./recommendations.component.css']
 })
 export class RecommendationsComponent implements OnInit {
-
   selectedCityId: string = 'ubicacion-actual';
   selectedWeather?: WeatherData;
   loading: boolean = false;
   errorMessage: string = '';
 
   cityOptions: CityOption[] = [
-  { id: 'ubicacion-actual', name: 'Ubicación actual' },
-  { id: 'bilbao', name: 'Bilbao' },
-  { id: 'madrid', name: 'Madrid' },
-  { id: 'barcelona', name: 'Barcelona' },
-  { id: 'valencia', name: 'Valencia' },
-  { id: 'sevilla', name: 'Sevilla' },
-  { id: 'santander', name: 'Santander' }
+    { id: 'ubicacion-actual', name: 'Ubicación actual' },
+    { id: 'bilbao', name: 'Bilbao' },
+    { id: 'madrid', name: 'Madrid' },
+    { id: 'barcelona', name: 'Barcelona' },
+    { id: 'valencia', name: 'Valencia' },
+    { id: 'sevilla', name: 'Sevilla' },
+    { id: 'santander', name: 'Santander' }
   ];
 
   constructor(
@@ -37,7 +36,7 @@ export class RecommendationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
-      const id = params.get('id') || 'ubicacion-actual';
+      const id = params.get('id') || this.weatherService.getActiveLocationId();
       this.selectedCityId = id;
       this.loadRecommendation(id);
     });
@@ -47,6 +46,7 @@ export class RecommendationsComponent implements OnInit {
     this.selectedCityId = cityId;
     this.loading = true;
     this.errorMessage = '';
+    this.weatherService.setActiveLocationId(cityId);
 
     this.weatherService.getForecastById(cityId).subscribe({
       next: (result: WeatherData | undefined) => {
@@ -58,6 +58,7 @@ export class RecommendationsComponent implements OnInit {
         }
 
         this.selectedWeather = result;
+        this.ensureCityOption(result);
         this.loading = false;
       },
       error: () => {
@@ -70,5 +71,16 @@ export class RecommendationsComponent implements OnInit {
 
   onCityChange(): void {
     this.router.navigate(['/recommendations', this.selectedCityId]);
+  }
+
+  private ensureCityOption(weather: WeatherData): void {
+    const exists = this.cityOptions.some(option => option.id === weather.id);
+
+    if (!exists) {
+      this.cityOptions = [
+        { id: weather.id, name: weather.ciudad },
+        ...this.cityOptions
+      ];
+    }
   }
 }

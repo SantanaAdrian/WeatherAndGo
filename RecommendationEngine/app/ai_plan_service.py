@@ -69,7 +69,12 @@ class AiPlanService:
             )
 
             ai_plans = self._parse_ai_response(response.text)
-            normalized_plans = self._normalize_plans(ai_plans)
+            normalized_plans = self._normalize_plans(
+                plans=ai_plans,
+                location_name=location_name,
+                latitude=latitude,
+                longitude=longitude
+            )
 
             if not normalized_plans:
                 return fallback_plans
@@ -115,6 +120,10 @@ No devuelvas planes genéricos tipo "bar cercano", "restaurante cercano", "cine 
 No repitas el mismo tipo de plan. No devuelvas dos planes de cine, dos restaurantes o dos planes culturales similares.
 Incluye variedad real: cine, eventos, cultura, cafetería, restaurante, escape room, realidad virtual, recreativos, bolera, centro comercial, parque, ruta, mirador, playa o paseo marítimo según el tiempo.
 Si el tiempo obliga a planes cubiertos, no uses siempre cine. Alterna con escape rooms, realidad virtual, recreativos, bolera, centros comerciales, museos, cafeterías o eventos cubiertos.
+Si la ubicación es un pueblo pequeño, zona rural o entorno natural, no asumas bares, restaurantes, cines ni centros comerciales.
+En pueblos pequeños prioriza rutas sencillas, miradores, patrimonio local, áreas recreativas, embalses, ríos, naturaleza, pueblos cercanos o visitas tranquilas.
+No recomiendes centros comerciales si no están realmente cerca.
+No recomiendes bares o restaurantes salvo que uses una zona concreta cercana o que sea razonable para la ubicación.
 Si recomiendas bares o restaurantes, usa una zona concreta o un establecimiento concreto si lo puedes verificar.
 Si recomiendas cine, usa un cine concreto, pero no inventes películas ni horarios.
 Si recomiendas eventos, usa un recinto, agenda o espacio concreto, pero no inventes eventos si no están verificados.
@@ -168,8 +177,15 @@ Estructura obligatoria:
 
         return plans
 
-    def _normalize_plans(self, plans: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_plans(
+        self,
+        plans: List[Dict[str, Any]],
+        location_name: str,
+        latitude: Optional[float],
+        longitude: Optional[float]
+    ) -> List[Dict[str, Any]]:
         normalized = []
+        rural_location = self._is_rural_or_unknown_location(location_name, latitude, longitude)
 
         for plan in plans:
             if not isinstance(plan, dict):
@@ -187,6 +203,9 @@ Estructura obligatoria:
                 continue
 
             if self._is_too_generic_plan(title, place_name):
+                continue
+
+            if rural_location and self._is_bad_rural_ai_plan(title, place_name, description):
                 continue
 
             if not external_url:
@@ -222,6 +241,8 @@ Estructura obligatoria:
         normalized_status = (status or "").lower()
         normalized_reliability = (reliability or "MEDIA").upper()
 
+        rural_location = self._is_rural_or_unknown_location(location, latitude, longitude)
+
         bad_weather = (
             normalized_category in ["INTERIOR", "PRECAUCION"]
             or (rain is not None and rain >= 50)
@@ -236,17 +257,23 @@ Estructura obligatoria:
 
         hot_weather = temperature is not None and temperature >= 30
 
-        if normalized_category == "EXTERIOR" and not bad_weather and not hot_weather:
-            plans = self._build_exterior_fallback(location, latitude, longitude)
-        elif bad_weather:
-            plans = self._build_interior_fallback(location, latitude, longitude)
-        elif hot_weather:
-            plans = self._build_hot_weather_fallback(location, latitude, longitude)
+        if rural_location:
+            plans = self._build_rural_fallback(
+                location=location,
+                latitude=latitude,
+                longitude=longitude,
+                bad_weather=bad_weather,
+                hot_weather=hot_weather
+            )
         else:
-            plans = self._build_mixed_fallback(location, latitude, longitude)
-
-        if self._is_bilbao_area(location, latitude, longitude):
-            plans = self._add_bilbao_area_plans(plans, location, latitude, longitude)
+            if normalized_category == "EXTERIOR" and not bad_weather and not hot_weather:
+                plans = self._build_exterior_fallback(location, latitude, longitude)
+            elif bad_weather:
+                plans = self._build_interior_fallback(location, latitude, longitude)
+            elif hot_weather:
+                plans = self._build_hot_weather_fallback(location, latitude, longitude)
+            else:
+                plans = self._build_mixed_fallback(location, latitude, longitude)
 
         beach_plan = self._get_beach_plan_if_suitable(
             location=location,
@@ -262,7 +289,10 @@ Estructura obligatoria:
         if beach_plan is not None:
             plans.insert(0, beach_plan)
 
-        if normalized_reliability != "ALTA":
+        if not rural_location and self._is_bilbao_area(location, latitude, longitude):
+            plans = self._add_bilbao_area_plans(plans, location, latitude, longitude)
+
+        if normalized_reliability != "ALTA" and not rural_location:
             alternative_plan = self._get_non_repeated_covered_plan(location, latitude, longitude, plans)
 
             if alternative_plan is not None:
@@ -491,6 +521,135 @@ Estructura obligatoria:
                 examples["restaurante"]["address"],
                 examples["restaurante"]["query"],
                 "FALLBACK"
+            )
+        ]
+
+    def _build_rural_fallback(
+        self,
+        location: str,
+        latitude: Optional[float],
+        longitude: Optional[float],
+        bad_weather: bool,
+        hot_weather: bool
+    ) -> List[Dict[str, Any]]:
+        examples = self._get_rural_examples(location)
+
+        if bad_weather:
+            return [
+                self._create_plan(
+                    "Visita patrimonial cercana",
+                    "CULTURA",
+                    "Plan más adecuado que una ruta larga si hay lluvia, viento o previsión dudosa. Conviene buscar iglesias, ermitas, arquitectura local o patrimonio de la zona.",
+                    examples["patrimonio"]["placeName"],
+                    examples["patrimonio"]["address"],
+                    examples["patrimonio"]["query"],
+                    "FALLBACK_RURAL"
+                ),
+                self._create_plan(
+                    "Pueblo cercano con servicios",
+                    "MIXTO",
+                    "Alternativa práctica para buscar una actividad sencilla bajo techo sin asumir que la localidad pequeña tenga bares, cine o centro comercial.",
+                    examples["pueblo_cercano"]["placeName"],
+                    examples["pueblo_cercano"]["address"],
+                    examples["pueblo_cercano"]["query"],
+                    "FALLBACK_RURAL"
+                ),
+                self._create_plan(
+                    "Centro de interpretación o turismo local",
+                    "INTERIOR",
+                    "Opción cubierta razonable en entornos rurales, especialmente si la previsión no permite planes exteriores largos.",
+                    examples["turismo"]["placeName"],
+                    examples["turismo"]["address"],
+                    examples["turismo"]["query"],
+                    "FALLBACK_RURAL"
+                ),
+                self._create_plan(
+                    "Paseo corto por el núcleo urbano",
+                    "MIXTO",
+                    "Plan prudente para moverse cerca de la localidad sin alejarse demasiado si el tiempo cambia.",
+                    examples["paseo_corto"]["placeName"],
+                    examples["paseo_corto"]["address"],
+                    examples["paseo_corto"]["query"],
+                    "FALLBACK_RURAL"
+                )
+            ]
+
+        if hot_weather:
+            return [
+                self._create_plan(
+                    "Zona de río, embalse o sombra",
+                    "EXTERIOR",
+                    "Plan recomendable con calor si existe una zona de agua o sombra cercana. Evita las horas centrales y revisa accesos antes de ir.",
+                    examples["agua"]["placeName"],
+                    examples["agua"]["address"],
+                    examples["agua"]["query"],
+                    "FALLBACK_RURAL"
+                ),
+                self._create_plan(
+                    "Ruta corta a primera o última hora",
+                    "EXTERIOR",
+                    "Alternativa exterior razonable con calor, limitando el esfuerzo y evitando rutas largas.",
+                    examples["ruta_corta"]["placeName"],
+                    examples["ruta_corta"]["address"],
+                    examples["ruta_corta"]["query"],
+                    "FALLBACK_RURAL"
+                ),
+                self._create_plan(
+                    "Mirador o punto panorámico cercano",
+                    "EXTERIOR",
+                    "Plan breve y compatible con calor si se hace sin exposición prolongada.",
+                    examples["mirador"]["placeName"],
+                    examples["mirador"]["address"],
+                    examples["mirador"]["query"],
+                    "FALLBACK_RURAL"
+                ),
+                self._create_plan(
+                    "Pueblo cercano con sombra o terraza",
+                    "MIXTO",
+                    "Opción flexible para descansar y buscar servicios reales en una localidad cercana.",
+                    examples["pueblo_cercano"]["placeName"],
+                    examples["pueblo_cercano"]["address"],
+                    examples["pueblo_cercano"]["query"],
+                    "FALLBACK_RURAL"
+                )
+            ]
+
+        return [
+            self._create_plan(
+                "Ruta natural sencilla",
+                "EXTERIOR",
+                "Plan principal para una ubicación rural o de montaña. Mejor una ruta corta y cercana que asumir ocio urbano inexistente.",
+                examples["ruta_corta"]["placeName"],
+                examples["ruta_corta"]["address"],
+                examples["ruta_corta"]["query"],
+                "FALLBACK_RURAL"
+            ),
+            self._create_plan(
+                "Mirador o paisaje cercano",
+                "EXTERIOR",
+                "Buena opción si el tiempo permite estar al aire libre sin realizar una actividad exigente.",
+                examples["mirador"]["placeName"],
+                examples["mirador"]["address"],
+                examples["mirador"]["query"],
+                "FALLBACK_RURAL"
+            ),
+            self._create_plan(
+                "Patrimonio local",
+                "CULTURA",
+                "Plan tranquilo para visitar elementos históricos, arquitectura rural o puntos destacados de la zona.",
+                examples["patrimonio"]["placeName"],
+                examples["patrimonio"]["address"],
+                examples["patrimonio"]["query"],
+                "FALLBACK_RURAL"
+            ),
+            self._create_plan(
+                "Área recreativa o zona de descanso",
+                "EXTERIOR",
+                "Alternativa sencilla para pasar un rato al aire libre sin depender de bares o centros comerciales.",
+                examples["area_recreativa"]["placeName"],
+                examples["area_recreativa"]["address"],
+                examples["area_recreativa"]["query"],
+                "FALLBACK_RURAL"
             )
         ]
 
@@ -851,6 +1010,50 @@ Estructura obligatoria:
             }
         }
 
+    def _get_rural_examples(self, location: str) -> Dict[str, Dict[str, str]]:
+        return {
+            "ruta_corta": {
+                "placeName": f"Rutas cerca de {location}",
+                "address": location,
+                "query": f"rutas senderismo fáciles cerca de {location}"
+            },
+            "mirador": {
+                "placeName": f"Miradores cerca de {location}",
+                "address": location,
+                "query": f"miradores paisajes cerca de {location}"
+            },
+            "patrimonio": {
+                "placeName": f"Patrimonio local de {location}",
+                "address": location,
+                "query": f"patrimonio iglesias ermitas monumentos cerca de {location}"
+            },
+            "area_recreativa": {
+                "placeName": f"Área recreativa cerca de {location}",
+                "address": location,
+                "query": f"área recreativa merendero cerca de {location}"
+            },
+            "agua": {
+                "placeName": f"Río, embalse o zona de baño cerca de {location}",
+                "address": location,
+                "query": f"río embalse zona de baño cerca de {location}"
+            },
+            "turismo": {
+                "placeName": f"Oficina de turismo o centro de interpretación cerca de {location}",
+                "address": location,
+                "query": f"centro de interpretación oficina turismo cerca de {location}"
+            },
+            "pueblo_cercano": {
+                "placeName": "Localidad cercana con servicios",
+                "address": location,
+                "query": f"pueblos cercanos con bares restaurantes servicios cerca de {location}"
+            },
+            "paseo_corto": {
+                "placeName": f"Paseo corto por {location}",
+                "address": location,
+                "query": f"qué ver en {location}"
+            }
+        }
+
     def _add_bilbao_area_plans(
         self,
         plans: List[Dict[str, Any]],
@@ -1033,6 +1236,49 @@ Estructura obligatoria:
 
         return 43.26 <= latitude <= 43.33 and -3.06 <= longitude <= -2.94
 
+    def _is_rural_or_unknown_location(
+        self,
+        location: str,
+        latitude: Optional[float],
+        longitude: Optional[float]
+    ) -> bool:
+        normalized_location = location.lower()
+
+        urban_keywords = [
+            "bilbao",
+            "barakaldo",
+            "baracaldo",
+            "getxo",
+            "sestao",
+            "portugalete",
+            "leioa",
+            "madrid",
+            "barcelona",
+            "valencia",
+            "sevilla",
+            "santander",
+            "vitoria",
+            "gasteiz",
+            "burgos",
+            "palencia",
+            "valladolid",
+            "pamplona",
+            "logroño",
+            "zaragoza",
+            "donostia",
+            "san sebastián",
+            "gijón",
+            "oviedo"
+        ]
+
+        if any(keyword in normalized_location for keyword in urban_keywords):
+            return False
+
+        if self._is_bilbao_coordinates(latitude, longitude):
+            return False
+
+        return True
+
     def _merge_plans(
         self,
         ai_plans: List[Dict[str, Any]],
@@ -1125,6 +1371,54 @@ Estructura obligatoria:
             return True
 
         return False
+
+    def _is_bad_rural_ai_plan(
+        self,
+        title: str,
+        place_name: str,
+        description: str
+    ) -> bool:
+        text = f"{title} {place_name} {description}".lower()
+
+        urban_terms = [
+            "centro comercial",
+            "shopping",
+            "cine",
+            "cartelera",
+            "bolera",
+            "recreativos",
+            "arcade",
+            "realidad virtual",
+            "escape room",
+            "restaurante",
+            "bar",
+            "cafetería",
+            "terraza"
+        ]
+
+        rural_terms = [
+            "ruta",
+            "senderismo",
+            "mirador",
+            "patrimonio",
+            "ermita",
+            "iglesia",
+            "río",
+            "rio",
+            "embalse",
+            "naturaleza",
+            "área recreativa",
+            "area recreativa",
+            "pueblo",
+            "monumento",
+            "paisaje",
+            "paseo"
+        ]
+
+        if any(term in text for term in rural_terms):
+            return False
+
+        return any(term in text for term in urban_terms)
 
     def _safe_string(self, value: Any) -> str:
         if value is None:
