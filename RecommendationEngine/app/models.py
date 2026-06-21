@@ -1,4 +1,5 @@
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -36,10 +37,11 @@ class WeatherPlanRecommendationRequest(BaseModel):
 
 class PlanRecommendation(BaseModel):
     title: str
-    description: str
-    type: str
     category: str
-    url: Optional[str] = None
+    description: str
+    placeName: Optional[str] = None
+    address: Optional[str] = None
+    externalUrl: Optional[str] = None
     source: Optional[str] = None
 
 
@@ -49,4 +51,4 @@ class WeatherPlanRecommendationResponse(BaseModel):
     summary: str
     recommendedPlanTypes: List[str]
     reasons: List[str]
-    plans: List[PlanRecommendation] = Field(default_factory=list)
+    personalizedPlans: List[PlanRecommendation] = Field(default_factory=list)

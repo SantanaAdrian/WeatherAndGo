@@ -228,13 +228,28 @@ export class WeatherService {
   }
 
   getForecastById(id: string): Observable<WeatherData | undefined> {
-    const city = this.cityLocations.find(item => item.id === id);
+  if (id === 'ubicacion-actual') {
+    return this.getCurrentLocationWeather().pipe(
+      catchError(error => {
+        console.error('Error obteniendo ubicación actual', error);
 
-    if (!city) {
-      return of(undefined);
-    }
+        return this.getWeatherByCoordinates(
+          43.263,
+          -2.935,
+          'bilbao',
+          'Bilbao'
+        );
+      })
+    );
+  }
 
-    return this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad);
+  const city = this.cityLocations.find(item => item.id === id);
+
+  if (!city) {
+    return of(undefined);
+  }
+
+  return this.getWeatherByCoordinates(city.lat, city.lon, city.id, city.ciudad);
   }
 
   getWeatherByCoordinates(
@@ -260,6 +275,37 @@ export class WeatherService {
 
   getWeatherLogsCount(): Observable<number> {
     return this.http.get<number>(`${this.logsUrl}/count`);
+  }
+
+  getCurrentLocationWeather(): Observable<WeatherData> {
+  return new Observable<WeatherData>((observer) => {
+    if (!navigator.geolocation) {
+      observer.error('El navegador no permite obtener la ubicación.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position: GeolocationPosition) => {
+        this.getWeatherByCoordinates(
+          position.coords.latitude,
+          position.coords.longitude,
+          'ubicacion-actual',
+          'Tu ubicación actual'
+        ).subscribe({
+          next: (result: WeatherData) => {
+            observer.next(result);
+            observer.complete();
+          },
+          error: (error) => {
+            observer.error(error);
+          }
+        });
+      },
+      (error) => {
+        observer.error(error);
+      }
+    );
+  });
   }
 
   deleteWeatherLogs(): Observable<void> {

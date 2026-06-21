@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { WeatherData, WeatherProviderData, WeatherService } from 'src/app/services/weather.service';
 
 interface CityOption {
@@ -23,40 +24,23 @@ interface ProviderComparisonRow {
 })
 export class ListTableComponent implements OnInit {
 
-  selectedCityId: string = 'bilbao';
+  selectedCityId: string = 'ubicacion-actual';
   selectedWeather?: WeatherData;
   comparisonRows: ProviderComparisonRow[] = [];
   loading: boolean = false;
   errorMessage: string = '';
 
   cityOptions: CityOption[] = [
-    {
-      id: 'bilbao',
-      name: 'Bilbao'
-    },
-    {
-      id: 'madrid',
-      name: 'Madrid'
-    },
-    {
-      id: 'barcelona',
-      name: 'Barcelona'
-    },
-    {
-      id: 'valencia',
-      name: 'Valencia'
-    },
-    {
-      id: 'sevilla',
-      name: 'Sevilla'
-    },
-    {
-      id: 'santander',
-      name: 'Santander'
-    }
+  { id: 'ubicacion-actual', name: 'Ubicación actual' },
+  { id: 'bilbao', name: 'Bilbao' },
+  { id: 'madrid', name: 'Madrid' },
+  { id: 'barcelona', name: 'Barcelona' },
+  { id: 'valencia', name: 'Valencia' },
+  { id: 'sevilla', name: 'Sevilla' },
+  { id: 'santander', name: 'Santander' }
   ];
 
-  constructor(private weatherService: WeatherService) { }
+  constructor(private weatherService: WeatherService,  private route: ActivatedRoute) { }
 
   ngOnInit(): void {
     this.loadComparison(this.selectedCityId);

@@ -15,11 +15,11 @@ const routes: Routes = [
   {path: 'list/:id', component: ListComponent },
   {path:"detail/:id", component:DetailComponent},
   {path:"list-table", component:ListTableComponent},
+  {path:"list-table/:id", component:ListTableComponent},
   {path:"error", component:ErrorComponent},
-  {path: 'recommendations', redirectTo: 'recommendations/bilbao', pathMatch: 'full' },
+  {path: 'recommendations', redirectTo: 'recommendations/ubicacion-actual', pathMatch: 'full' },
   {path: 'recommendations/:id', component: RecommendationsComponent },
   {path:"**", component:ErrorComponent}
-
 ];
 
 @NgModule({

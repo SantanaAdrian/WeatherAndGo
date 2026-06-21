@@ -19,7 +19,7 @@ export class ListComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
-      const id = params.get('id') || 'bilbao';
+      const id = params.get('id') || 'ubicacion-actual';
       this.getForecast(id);
     });
   }

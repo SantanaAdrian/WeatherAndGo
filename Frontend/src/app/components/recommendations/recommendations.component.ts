@@ -14,36 +14,19 @@ interface CityOption {
 })
 export class RecommendationsComponent implements OnInit {
 
-  selectedCityId: string = 'bilbao';
+  selectedCityId: string = 'ubicacion-actual';
   selectedWeather?: WeatherData;
   loading: boolean = false;
   errorMessage: string = '';
 
   cityOptions: CityOption[] = [
-    {
-      id: 'bilbao',
-      name: 'Bilbao'
-    },
-    {
-      id: 'madrid',
-      name: 'Madrid'
-    },
-    {
-      id: 'barcelona',
-      name: 'Barcelona'
-    },
-    {
-      id: 'valencia',
-      name: 'Valencia'
-    },
-    {
-      id: 'sevilla',
-      name: 'Sevilla'
-    },
-    {
-      id: 'santander',
-      name: 'Santander'
-    }
+  { id: 'ubicacion-actual', name: 'Ubicación actual' },
+  { id: 'bilbao', name: 'Bilbao' },
+  { id: 'madrid', name: 'Madrid' },
+  { id: 'barcelona', name: 'Barcelona' },
+  { id: 'valencia', name: 'Valencia' },
+  { id: 'sevilla', name: 'Sevilla' },
+  { id: 'santander', name: 'Santander' }
   ];
 
   constructor(
@@ -54,7 +37,7 @@ export class RecommendationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
-      const id = params.get('id') || 'bilbao';
+      const id = params.get('id') || 'ubicacion-actual';
       this.selectedCityId = id;
       this.loadRecommendation(id);
     });

@@ -136,7 +136,12 @@ class RecommendationService:
             category=category,
             weather_summary=weather_summary,
             latitude=getattr(request, "latitude", None),
-            longitude=getattr(request, "longitude", None)
+            longitude=getattr(request, "longitude", None),
+            temperature=temperature,
+            rain=rain,
+            wind=wind,
+            reliability=reliability,
+            status=status
         )
 
         return WeatherPlanRecommendationResponse(
@@ -145,7 +150,7 @@ class RecommendationService:
             summary=summary,
             recommendedPlanTypes=self._get_plan_types(category),
             reasons=reasons,
-            plans=plans
+            personalizedPlans=plans
         )
 
     def _select_category(
