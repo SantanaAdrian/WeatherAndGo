@@ -196,7 +196,6 @@ Estructura obligatoria:
             category = self._safe_string(plan.get("category")) or "MIXTO"
             place_name = self._safe_string(plan.get("placeName")) or self._safe_string(plan.get("place_name"))
             address = self._safe_string(plan.get("address"))
-            external_url = self._safe_string(plan.get("externalUrl")) or self._safe_string(plan.get("url"))
             source = self._safe_string(plan.get("source")) or "AI_SEARCH"
 
             if not title or not description:
@@ -208,9 +207,17 @@ Estructura obligatoria:
             if rural_location and self._is_bad_rural_ai_plan(title, place_name, description):
                 continue
 
-            if not external_url:
-                query = f"{title} {place_name} {address}".strip()
-                external_url = self._build_google_search_url(query)
+            query = " ".join(
+                part for part in [
+                    place_name,
+                    address,
+                    title,
+                    location_name
+                ]
+                if part
+            ).strip()
+
+            external_url = self._build_google_search_url(query)
 
             normalized.append({
                 "title": title,
@@ -1146,7 +1153,12 @@ Estructura obligatoria:
         }
 
     def _build_google_search_url(self, query: str) -> str:
-        return f"https://www.google.com/search?q={quote_plus(query)}"
+        clean_query = " ".join(str(query or "").split())
+
+        if not clean_query:
+            clean_query = "planes cerca de mi ubicación"
+
+        return f"https://www.google.com/search?q={quote_plus(clean_query)}"
 
     def _is_summer_or_hot(self, temperature: Optional[float]) -> bool:
         current_month = date.today().month
